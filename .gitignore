@@ -22,3 +22,9 @@ _testmain.go
 *.exe
 *.test
 *.prof
+
+# App Engile application's setting file
+app.yaml
+
+# LINE BOT QR Code file
+img/linebot_qr.png
