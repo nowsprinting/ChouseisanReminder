@@ -59,7 +59,13 @@ func lineCallback(w http.ResponseWriter, r *http.Request) {
 		content := result.Content()
 		if content != nil && content.IsMessage && content.ContentType == linebot.ContentTypeText {
 			text, err := content.TextContent()
-			_, err = bot.SendText([]string{content.From}, "OK "+text.Text)
+
+			//送信者のディスプレイネームを取得
+			user, err := bot.GetUserProfile([]string{content.From})
+
+			//メッセージ送信
+			_, err = bot.SendText([]string{content.From},
+				user.Contacts[0].DisplayName+"さんより\n「"+text.Text+"」")
 			if err != nil {
 				log.Errorf(c, "Error occurred at send text:%v", err)
 			}
