@@ -3,6 +3,7 @@ package main
 import (
 	"html/template"
 	"net/http"
+	"net/url"
 	"os"
 	"strconv"
 	"time"
@@ -10,9 +11,11 @@ import (
 	"golang.org/x/net/context"
 
 	"github.com/line/line-bot-sdk-go/linebot"
+
 	"google.golang.org/appengine"
 	"google.golang.org/appengine/datastore"
 	"google.golang.org/appengine/log"
+	"google.golang.org/appengine/taskqueue"
 	"google.golang.org/appengine/urlfetch"
 )
 
@@ -32,32 +35,40 @@ type logSubscriber struct {
 
 func init() {
 	http.HandleFunc("/line/callback", lineCallback)
+	http.HandleFunc("/task/addfriend", addFriend)
+	http.HandleFunc("/task/removefriend", removeFriend)
+	http.HandleFunc("/task/analyzecommand", analyzeCommand)
 	http.HandleFunc("/", usage)
+}
+
+func createBotClient(c context.Context) (bot *linebot.Client, err error) {
+	var (
+		channelID     int64
+		channelSecret = os.Getenv("LINE_CHANNEL_SECRET")
+		channelMID    = os.Getenv("LINE_CHANNEL_MID")
+	)
+
+	channelID, err = strconv.ParseInt(os.Getenv("LINE_CHANNEL_ID"), 10, 64)
+	if err != nil {
+		log.Errorf(c, "Error occurred at parse `LINE_CHANNEL_ID`: %v", err)
+		return bot, err
+	}
+	bot, err = linebot.NewClient(channelID, channelSecret, channelMID, linebot.WithHTTPClient(urlfetch.Client(c))) //Appengineのurlfetchを使用する
+	if err != nil {
+		log.Errorf(c, "Error occurred at create linebot client: %v", err)
+		return bot, err
+	}
+	return bot, nil
 }
 
 /**
  * LINEからのコールバックをハンドリング
  */
 func lineCallback(w http.ResponseWriter, r *http.Request) {
-	var (
-		channelID     int64
-		channelSecret = os.Getenv("LINE_CHANNEL_SECRET")
-		channelMID    = os.Getenv("LINE_CHANNEL_MID")
-		err           error
-	)
 
-	// App engine Content
 	c := appengine.NewContext(r)
-
-	// Setup bot client
-	channelID, err = strconv.ParseInt(os.Getenv("LINE_CHANNEL_ID"), 10, 64)
+	bot, err := createBotClient(c)
 	if err != nil {
-		log.Errorf(c, "Error occurred at parse `LINE_CHANNEL_ID`: %v", err)
-		return
-	}
-	bot, err := linebot.NewClient(channelID, channelSecret, channelMID, linebot.WithHTTPClient(urlfetch.Client(c))) //Appengineのurlfetchを使用する
-	if err != nil {
-		log.Errorf(c, "Error occurred at create linebot client: %v", err)
 		return
 	}
 
@@ -82,22 +93,18 @@ func lineCallback(w http.ResponseWriter, r *http.Request) {
 					log.Errorf(c, "Error occurred at get operation content: %v", err)
 					return
 				}
-				sender, err2 := getSenderProfile(c, bot, opContent.Params[0])
-				if err2 != nil {
-					return
-				}
 
 				if content.OpType == linebot.OpTypeAddedAsFriend {
-					if addFriend(c, sender.MID, sender.DisplayName) != nil {
-						return
-					}
-					sendToAll(c, bot, sender.DisplayName+"さんが購読を開始しました。いらっしゃいませ！！")
+					task := taskqueue.NewPOSTTask("/task/addfriend", url.Values{
+						"mid": {opContent.Params[0]},
+					})
+					taskqueue.Add(c, task, "default")
 
 				} else if content.OpType == linebot.OpTypeBlocked {
-					if removeFriend(c, sender.MID, sender.DisplayName) != nil {
-						return
-					}
-					sendToAll(c, bot, sender.DisplayName+"さんが購読を解除しました。さようなら！")
+					task := taskqueue.NewPOSTTask("/task/removefriend", url.Values{
+						"mid": {opContent.Params[0]},
+					})
+					taskqueue.Add(c, task, "default")
 
 				} else {
 					log.Warningf(c, "Unknown OpType received. OpType=%v", content.OpType)
@@ -110,11 +117,12 @@ func lineCallback(w http.ResponseWriter, r *http.Request) {
 					log.Errorf(c, "Error occurred at parse text context: %v", err)
 					return
 				}
-				sender, err2 := getSenderProfile(c, bot, content.From)
-				if err2 != nil {
-					return
-				}
-				sendToAll(c, bot, sender.DisplayName+"さんより\n「"+text.Text+"」")
+
+				task := taskqueue.NewPOSTTask("/task/analyzecommand", url.Values{
+					"mid":  {content.From},
+					"text": {text.Text},
+				})
+				taskqueue.Add(c, task, "default")
 			}
 		}
 	}
@@ -130,64 +138,6 @@ func getSenderProfile(c context.Context, bot *linebot.Client, from string) (line
 		return linebot.ContactInfo{}, err
 	}
 	return senderProfile.Contacts[0], nil //添字は0固定
-}
-
-/**
- * 友だち追加（データストアに購読者として登録）
- */
-func addFriend(c context.Context, mid string, displayName string) error {
-
-	//購読者を保存
-	entity := subscriber{
-		DisplayName: displayName,
-		MID:         mid,
-	}
-	key := datastore.NewKey(c, "Subscriber", mid, 0, nil)
-	if _, err := datastore.Put(c, key, &entity); err != nil {
-		log.Errorf(c, "Error occurred at put subcriber to datastore. mid:%v, err: %v", mid, err)
-		return err
-	}
-
-	//ログエントリを追加
-	logEntity := logSubscriber{
-		DisplayName: displayName,
-		MID:         mid,
-		OpType:      linebot.OpTypeAddedAsFriend,
-		AddTime:     time.Now(),
-	}
-	logKey := datastore.NewIncompleteKey(c, "LogSubscriber", nil)
-	if _, err := datastore.Put(c, logKey, &logEntity); err != nil {
-		log.Errorf(c, "Error occurred at put log-subcriber to datastore. mid:%v, err: %v", mid, err)
-		return err
-	}
-	return nil
-}
-
-/**
- * 友だち削除（データストアから削除）
- */
-func removeFriend(c context.Context, mid string, displayName string) error {
-
-	//購読者を削除
-	key := datastore.NewKey(c, "Subscriber", mid, 0, nil)
-	if err := datastore.Delete(c, key); err != nil {
-		log.Errorf(c, "Error occurred at delete subcriber to datastore. mid:%v, err: %v", mid, err)
-		return err
-	}
-
-	//ログエントリを追加
-	logEntity := logSubscriber{
-		DisplayName: displayName,
-		MID:         mid,
-		OpType:      linebot.OpTypeBlocked,
-		AddTime:     time.Now(),
-	}
-	logKey := datastore.NewIncompleteKey(c, "LogSubscriber", nil)
-	if _, err := datastore.Put(c, logKey, &logEntity); err != nil {
-		log.Errorf(c, "Error occurred at put log-subcriber to datastore. mid:%v, err: %v", mid, err)
-		return err
-	}
-	return nil
 }
 
 /**
@@ -213,6 +163,112 @@ func sendToAll(c context.Context, bot *linebot.Client, message string) error {
 		return err
 	}
 	return nil
+}
+
+/**
+ * 友だち追加（データストアに購読者として登録）
+ */
+func addFriend(w http.ResponseWriter, r *http.Request) {
+	c := appengine.NewContext(r)
+	bot, err := createBotClient(c)
+	if err != nil {
+		return
+	}
+
+	//購読者プロファイルを取得
+	mid := r.FormValue("mid")
+	sender, err := getSenderProfile(c, bot, mid)
+	if err != nil {
+		return
+	}
+
+	//購読者を保存
+	entity := subscriber{
+		DisplayName: sender.DisplayName,
+		MID:         mid,
+	}
+	key := datastore.NewKey(c, "Subscriber", mid, 0, nil)
+	if _, err := datastore.Put(c, key, &entity); err != nil {
+		log.Errorf(c, "Error occurred at put subcriber to datastore. mid:%v, err: %v", mid, err)
+		return
+	}
+
+	//ログエントリを追加
+	logEntity := logSubscriber{
+		DisplayName: sender.DisplayName,
+		MID:         mid,
+		OpType:      linebot.OpTypeAddedAsFriend,
+		AddTime:     time.Now(),
+	}
+	logKey := datastore.NewIncompleteKey(c, "LogSubscriber", nil)
+	if _, err := datastore.Put(c, logKey, &logEntity); err != nil {
+		log.Errorf(c, "Error occurred at put log-subcriber to datastore. mid:%v, err: %v", mid, err)
+		return
+	}
+
+	sendToAll(c, bot, sender.DisplayName+"さんが購読を開始しました。いらっしゃいませ！！")
+}
+
+/**
+ * 友だち削除（データストアから削除）
+ */
+func removeFriend(w http.ResponseWriter, r *http.Request) {
+	c := appengine.NewContext(r)
+	bot, err := createBotClient(c)
+	if err != nil {
+		return
+	}
+
+	//購読者プロファイルを取得
+	mid := r.FormValue("mid")
+	sender, err := getSenderProfile(c, bot, mid)
+	if err != nil {
+		return
+	}
+
+	//購読者を削除
+	key := datastore.NewKey(c, "Subscriber", mid, 0, nil)
+	if err := datastore.Delete(c, key); err != nil {
+		log.Errorf(c, "Error occurred at delete subcriber to datastore. mid:%v, err: %v", mid, err)
+		return
+	}
+
+	//ログエントリを追加
+	logEntity := logSubscriber{
+		DisplayName: sender.DisplayName,
+		MID:         mid,
+		OpType:      linebot.OpTypeBlocked,
+		AddTime:     time.Now(),
+	}
+	logKey := datastore.NewIncompleteKey(c, "LogSubscriber", nil)
+	if _, err := datastore.Put(c, logKey, &logEntity); err != nil {
+		log.Errorf(c, "Error occurred at put log-subcriber to datastore. mid:%v, err: %v", mid, err)
+		return
+	}
+
+	sendToAll(c, bot, sender.DisplayName+"さんが購読を解除しました。さようなら！")
+}
+
+/**
+ * チャットコマンド解析（コマンドに応じたメッセージを送信）
+ */
+func analyzeCommand(w http.ResponseWriter, r *http.Request) {
+	c := appengine.NewContext(r)
+	bot, err := createBotClient(c)
+	if err != nil {
+		return
+	}
+	mid := r.FormValue("mid")
+	text := r.FormValue("text")
+
+	//TODO: コマンドに応じて応答を変える
+
+	//default: 全員にブロードキャスト
+	sender, err := getSenderProfile(c, bot, mid)
+	if err != nil {
+		return
+	}
+	sendToAll(c, bot, sender.DisplayName+"さんより\n「"+text+"」")
 }
 
 /**
