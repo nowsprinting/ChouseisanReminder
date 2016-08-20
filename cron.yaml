@@ -1,0 +1,5 @@
+cron:
+- description: crawl chouseisan every day
+  url: /cron/crawlchouseisan
+  schedule: every day 08:00
+  timezone: Asia/Tokyo

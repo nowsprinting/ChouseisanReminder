@@ -38,6 +38,7 @@ func init() {
 	http.HandleFunc("/task/addfriend", addFriend)
 	http.HandleFunc("/task/removefriend", removeFriend)
 	http.HandleFunc("/task/analyzecommand", analyzeCommand)
+	http.HandleFunc("/cron/crawlchouseisan", crawlChouseisan)
 	http.HandleFunc("/", usage)
 }
 
