@@ -159,6 +159,6 @@ func crawlChouseisan(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		return
 	}
-	msg := obj.DateString + "の出欠状況をお知らせします\n◯:" + strconv.Itoa(obj.Present) + "名\n×:" + strconv.Itoa(obj.Present) + "名\n×:" + strconv.Itoa(obj.Absent) + "名\n参加者:" + obj.ParticipantsName + "\n詳細および出欠変更は「調整さん」へ\nhttps://chouseisan.com/s?h=" + os.Getenv("CHOUSEISAN_EVENT_HASH")
+	msg := obj.DateString + "の出欠状況をお知らせします\n参加: " + strconv.Itoa(obj.Present) + "名(" + obj.ParticipantsName + ")\n不参加: " + strconv.Itoa(obj.Absent) + "名\n不明/未入力: " + strconv.Itoa(obj.Unknown) + "名\n\n詳細および出欠変更は「調整さん」へ\nhttps://chouseisan.com/s?h=" + os.Getenv("CHOUSEISAN_EVENT_HASH")
 	sendToAll(c, bot, msg)
 }
