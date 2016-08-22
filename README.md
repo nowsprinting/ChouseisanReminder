@@ -44,7 +44,7 @@
 
 ### app.yaml
 
-`app.yaml`にはLINE BOTのキー情報などを含むため、リポジトリから除外している。下記の書籍で`app.yaml`を作成すること
+`app.yaml`にはLINE BOTのキー情報などを含むため、リポジトリから除外している。下記の書式で`app.yaml`を作成すること
 
 	application: YOUR_APPLICATION_ID
 	version: 1
