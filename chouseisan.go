@@ -150,7 +150,7 @@ func crawlChouseisan(w http.ResponseWriter, r *http.Request) {
 	after3days := time.Date(today.Year(), today.Month(), today.Day(), 0, 0, 0, 0, tz).AddDate(0, 0, 3)
 	obj, exist := m[after3days.String()]
 	if !exist {
-		log.Infof(c, "Not found schedle at 3 days after.")
+		log.Infof(c, "Not found schedule at 3 days after.")
 		return
 	}
 
