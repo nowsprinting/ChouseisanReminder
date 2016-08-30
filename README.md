@@ -1,5 +1,6 @@
 # Chouseisan Reminder
 [![Build Status](https://travis-ci.org/nowsprinting/ChouseisanReminder.svg?branch=master)](https://travis-ci.org/nowsprinting/ChouseisanReminder)
+[![Coverage Status](https://coveralls.io/repos/github/nowsprinting/ChouseisanReminder/badge.svg)](https://coveralls.io/github/nowsprinting/ChouseisanReminder)
 
 出欠管理ツール「[調整さん](https://chouseisan.com/)」から出欠情報を取得し、期日（開催日）の数日前に参加状況を流すLINE BOT
 
