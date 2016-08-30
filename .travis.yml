@@ -7,6 +7,8 @@ before_install:
   - export PATH=$PATH:./go_appengine/
   - goapp get golang.org/x/tools/cmd/cover
   - goapp get github.com/mattn/goveralls
+  - goapp get github.com/alecthomas/gometalinter
+  - gometalinter --install --update
 
 install:
   - goapp get google.golang.org/appengine
@@ -19,3 +21,4 @@ script:
 
 after_success:
   - $GOPATH/bin/goveralls -coverprofile=coverage.out -service=travis-ci -repotoken $COVERALLS_TOKEN
+  - gometalinter
