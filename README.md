@@ -1,4 +1,5 @@
 # Chouseisan Reminder
+[![Build Status](https://travis-ci.org/nowsprinting/ChouseisanReminder.svg?branch=master)](https://travis-ci.org/nowsprinting/ChouseisanReminder)
 
 出欠管理ツール「[調整さん](https://chouseisan.com/)」から出欠情報を取得し、期日（開催日）の数日前に参加状況を流すLINE BOT
 
@@ -50,7 +51,7 @@
 	version: 1
 	runtime: go
 	api_version: go1
-	
+
 	handlers:
 	- url: /img
 	  static_dir: img
@@ -62,7 +63,7 @@
 	  login: admin
 	- url: /.*
 	  script: _go_app
-	
+
 	env_variables:
 	  CHOUSEISAN_EVENT_HASH: 'YOUR_EVENT_HASH'
 	  LINE_CHANNEL_ID: 'YOUR_CHANNEL_ID'
