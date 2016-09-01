@@ -25,7 +25,7 @@ func TestParseCsvNormally(t *testing.T) {
 	defer done()
 
 	//テストデータはファイルから読む
-	testdata, err := os.Open("testdata/chouseisan.csv")
+	testdata, err := os.Open("testdata/chouseisan/normally.csv")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -73,7 +73,7 @@ func TestParseCsvNormallyNextYear(t *testing.T) {
 	defer done()
 
 	//テストデータはファイルから読む
-	testdata, err := os.Open("testdata/chouseisan.csv")
+	testdata, err := os.Open("testdata/chouseisan/normally.csv")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -121,7 +121,7 @@ func TestParseCsvNormallyNoCol(t *testing.T) {
 	defer done()
 
 	//テストデータはファイルから読む
-	testdata, err := os.Open("testdata/no_col.csv")
+	testdata, err := os.Open("testdata/chouseisan/no_col.csv")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -169,7 +169,7 @@ func TestParseCsvNormallyNoRow(t *testing.T) {
 	defer done()
 
 	//テストデータはファイルから読む
-	testdata, err := os.Open("testdata/no_row.csv")
+	testdata, err := os.Open("testdata/chouseisan/no_row.csv")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -205,7 +205,7 @@ func TestParseCsvInvalidDateFormat(t *testing.T) {
 	defer done()
 
 	//テストデータはファイルから読む
-	testdata, err := os.Open("testdata/invalid.csv")
+	testdata, err := os.Open("testdata/chouseisan/invalid.csv")
 	if err != nil {
 		t.Fatal(err)
 	}
