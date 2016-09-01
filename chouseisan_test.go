@@ -8,10 +8,10 @@ import (
 	"google.golang.org/appengine/aetest"
 )
 
-/*
+/**
  * 正常ケース
  */
-func TestParseCsv_normally(t *testing.T) {
+func TestParseCsvNormally(t *testing.T) {
 	var (
 		objDay time.Time
 		obj    *schedule
@@ -56,10 +56,10 @@ func TestParseCsv_normally(t *testing.T) {
 	}
 }
 
-/*
+/**
  * 翌年扱いになる日程のテスト
  */
-func TestParseCsv_normally_nextyear(t *testing.T) {
+func TestParseCsvNormallyNextYear(t *testing.T) {
 	var (
 		objDay time.Time
 		obj    *schedule
@@ -104,10 +104,10 @@ func TestParseCsv_normally_nextyear(t *testing.T) {
 	}
 }
 
-/*
+/**
  * カラムの無いケース
  */
-func TestParseCsv_normally_no_col(t *testing.T) {
+func TestParseCsvNormallyNoCol(t *testing.T) {
 	var (
 		objDay time.Time
 		obj    *schedule
@@ -152,10 +152,10 @@ func TestParseCsv_normally_no_col(t *testing.T) {
 	}
 }
 
-/*
+/**
  * 行の無いケース
  */
-func TestParseCsv_normally_no_row(t *testing.T) {
+func TestParseCsvNormallyNoRow(t *testing.T) {
 	var (
 		objDay time.Time
 		obj    *schedule
@@ -188,10 +188,10 @@ func TestParseCsv_normally_no_row(t *testing.T) {
 	}
 }
 
-/*
+/**
  * 日程カラムのフォーマット不正データ
  */
-func TestParseCsv_invalid_dateformat(t *testing.T) {
+func TestParseCsvInvalidDateFormat(t *testing.T) {
 	var (
 		// objDay time.Time
 		// obj    *schedule
