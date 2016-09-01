@@ -149,11 +149,17 @@ func crawlChouseisan(w http.ResponseWriter, r *http.Request) {
 	//3日後の予定をピック
 	after3days := time.Date(today.Year(), today.Month(), today.Day(), 0, 0, 0, 0, tz).AddDate(0, 0, 3)
 	obj, exist := m[after3days.String()]
-	if !exist {
+	if exist {
+		sendSchedule(c, obj)
+	} else {
 		log.Infof(c, "Not found schedule at 3 days after.")
-		return
 	}
+}
 
+/**
+ * 出欠メッセージを組み立ててLINEに送信
+ */
+func sendSchedule(c context.Context, obj *schedule) {
 	//メッセージを組み立てて送信
 	bot, err := createBotClient(c)
 	if err != nil {
@@ -161,4 +167,5 @@ func crawlChouseisan(w http.ResponseWriter, r *http.Request) {
 	}
 	msg := obj.DateString + "の出欠状況をお知らせします\n参加: " + strconv.Itoa(obj.Present) + "名(" + obj.ParticipantsName + ")\n不参加: " + strconv.Itoa(obj.Absent) + "名\n不明/未入力: " + strconv.Itoa(obj.Unknown) + "名\n\n詳細および出欠変更は「調整さん」へ\nhttps://chouseisan.com/s?h=" + os.Getenv("CHOUSEISAN_EVENT_HASH")
 	sendToAll(c, bot, msg)
+	return
 }
