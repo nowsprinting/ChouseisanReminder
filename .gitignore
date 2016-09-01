@@ -23,6 +23,9 @@ _testmain.go
 *.test
 *.prof
 
+# cover
+coverage.out
+
 # App Engile application's setting file
 app.yaml
 

@@ -1,0 +1,21 @@
+{
+  "result":[
+    {
+      "id":"ABCDEF-12345678901",
+      "eventType":"138311609100106403",
+      "from":"u206d25c2ea6bd87c17655609a1c37cb8",
+      "fromChannel":1341301815,
+      "to":["u0cc15697597f61dd8b01cea8b027050e"],
+      "toChannel":1441301333,
+      "content":{
+        "revision":253,
+        "opType":8,
+        "params":[
+          "u012345678901234567890123456789ab",
+          null,
+          null
+        ]
+      }
+    }
+  ]
+}

@@ -79,7 +79,7 @@ func lineCallback(w http.ResponseWriter, r *http.Request) {
 			log.Warningf(c, "Linebot request status: 400")
 			w.WriteHeader(400)
 		} else {
-			log.Warningf(c, "linebot request status: 500")
+			log.Warningf(c, "linebot request status: 500\n\terror: %v", err)
 			w.WriteHeader(500)
 		}
 		return

@@ -12,12 +12,13 @@ before_install:
 
 install:
   - goapp get google.golang.org/appengine
+  - goapp get github.com/jarcoal/httpmock
   - goapp get github.com/line/line-bot-sdk-go/linebot
   - goapp get golang.org/x/text/encoding/japanese
   - goapp get golang.org/x/text/transform
 
 script:
-  - goapp test -v -covermode=count -coverprofile=coverage.out
+  - runtest.sh
 
 after_success:
   - $GOPATH/bin/goveralls -coverprofile=coverage.out -service=travis-ci -repotoken $COVERALLS_TOKEN
