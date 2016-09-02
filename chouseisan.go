@@ -26,6 +26,7 @@ type schedule struct {
 	Absent           int       // ×
 	Unknown          int       // △および未入力
 	ParticipantsName string    // 参加者の名前を列挙したもの
+	UnknownName      string    // △および未入力の名前を列挙したもの
 }
 
 // 調整さんスケジュールのMap型
@@ -97,6 +98,7 @@ func parseCsv(c context.Context, csvBody io.ReadCloser, today time.Time) (m sche
 						s.Absent = 0
 						s.Unknown = 0
 						s.ParticipantsName = ""
+						s.UnknownName = ""
 					}
 
 				} else if len(names[i-1]) > 0 {
@@ -111,6 +113,10 @@ func parseCsv(c context.Context, csvBody io.ReadCloser, today time.Time) (m sche
 						s.Absent++
 					} else {
 						s.Unknown++
+						if len(s.UnknownName) > 0 {
+							s.UnknownName += ","
+						}
+						s.UnknownName += names[i-1]
 					}
 				}
 			}
@@ -174,7 +180,7 @@ func sendSchedule(c context.Context, obj *schedule) {
 	if err != nil {
 		return
 	}
-	msg := obj.DateString + "の出欠状況をお知らせします\n参加: " + strconv.Itoa(obj.Present) + "名(" + obj.ParticipantsName + ")\n不参加: " + strconv.Itoa(obj.Absent) + "名\n不明/未入力: " + strconv.Itoa(obj.Unknown) + "名\n\n詳細および出欠変更は「調整さん」へ\nhttps://chouseisan.com/s?h=" + os.Getenv("CHOUSEISAN_EVENT_HASH")
+	msg := obj.DateString + "の出欠状況をお知らせします\n参加: " + strconv.Itoa(obj.Present) + "名(" + obj.ParticipantsName + ")\n不参加: " + strconv.Itoa(obj.Absent) + "名\n不明/未入力: " + strconv.Itoa(obj.Unknown) + "名(" + obj.UnknownName + ")\n\n詳細および出欠変更は「調整さん」へ\nhttps://chouseisan.com/s?h=" + os.Getenv("CHOUSEISAN_EVENT_HASH")
 	sendToAll(c, bot, msg)
 	return
 }
