@@ -146,9 +146,18 @@ func crawlChouseisan(w http.ResponseWriter, r *http.Request) {
 	today := time.Now().In(tz)
 	m := parseCsv(c, res.Body, today)
 
+	//当日の予定をピック
+	targetDate := time.Date(today.Year(), today.Month(), today.Day(), 0, 0, 0, 0, tz)
+	obj, exist := m[targetDate.String()]
+	if exist {
+		sendSchedule(c, obj)
+	} else {
+		log.Infof(c, "Not found schedule at today.")
+	}
+
 	//3日後の予定をピック
-	after3days := time.Date(today.Year(), today.Month(), today.Day(), 0, 0, 0, 0, tz).AddDate(0, 0, 3)
-	obj, exist := m[after3days.String()]
+	targetDate = targetDate.AddDate(0, 0, 3)
+	obj, exist = m[targetDate.String()]
 	if exist {
 		sendSchedule(c, obj)
 	} else {
