@@ -38,6 +38,7 @@ func init() {
 	http.HandleFunc("/task/addfriend", addFriend)
 	http.HandleFunc("/task/removefriend", removeFriend)
 	http.HandleFunc("/task/analyzecommand", analyzeCommand)
+	http.HandleFunc("/task/sharesticker", shareSticker)
 	http.HandleFunc("/cron/crawlchouseisan", crawlChouseisan)
 	http.HandleFunc("/", usage)
 }
@@ -122,6 +123,22 @@ func lineCallback(w http.ResponseWriter, r *http.Request) {
 				task := taskqueue.NewPOSTTask("/task/analyzecommand", url.Values{
 					"mid":  {content.From},
 					"text": {text.Text},
+				})
+				taskqueue.Add(c, task, "default")
+
+			} else if content.IsMessage && content.ContentType == linebot.ContentTypeSticker {
+				//スタンプ受信
+				sticker, err := content.StickerContent()
+				if err != nil {
+					log.Errorf(c, "Error occurred at parse sticker context: %v", err)
+					return
+				}
+
+				task := taskqueue.NewPOSTTask("/task/sharesticker", url.Values{
+					"mid":      {content.From},
+					"stkid":    {strconv.Itoa(sticker.ID)},
+					"stkpkgid": {strconv.Itoa(sticker.PackageID)},
+					"stkver":   {strconv.Itoa(sticker.Version)},
 				})
 				taskqueue.Add(c, task, "default")
 			}
