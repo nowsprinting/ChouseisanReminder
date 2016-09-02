@@ -51,11 +51,11 @@ func TestParseCsvNormally(t *testing.T) {
 	if obj.Unknown != 2 {
 		t.Errorf("Bad obj.Unknown: %v", obj.Unknown)
 	}
-	if obj.ParticipantsName != "電三太郎,電四郎,電六郎,電七郎" {
+	if obj.ParticipantsName != "(電三太郎,電四郎,電六郎,電七郎)" {
 		t.Errorf("Bad obj.ParticipantsName: %v", obj.ParticipantsName)
 	}
-	if obj.UnknownName != "電一,電五郎" {
-		t.Errorf("Bad obj.ParticipantsName: %v", obj.UnknownName)
+	if obj.UnknownName != "(電一,電五郎)" {
+		t.Errorf("Bad obj.UnknownName: %v", obj.UnknownName)
 	}
 }
 
@@ -102,11 +102,11 @@ func TestParseCsvNormallyNextYear(t *testing.T) {
 	if obj.Unknown != 1 {
 		t.Errorf("Bad obj.Unknown: %v", obj.Unknown)
 	}
-	if obj.ParticipantsName != "電一,電次郎,電四郎,電六郎,電七郎" {
+	if obj.ParticipantsName != "(電一,電次郎,電四郎,電六郎,電七郎)" {
 		t.Errorf("Bad obj.ParticipantsName: %v", obj.ParticipantsName)
 	}
-	if obj.UnknownName != "電五郎" {
-		t.Errorf("Bad obj.ParticipantsName: %v", obj.UnknownName)
+	if obj.UnknownName != "(電五郎)" {
+		t.Errorf("Bad obj.UnknownName: %v", obj.UnknownName)
 	}
 }
 
@@ -157,7 +157,7 @@ func TestParseCsvNormallyNoCol(t *testing.T) {
 		t.Errorf("Bad obj.ParticipantsName: %v", obj.ParticipantsName)
 	}
 	if obj.UnknownName != "" {
-		t.Errorf("Bad obj.ParticipantsName: %v", obj.UnknownName)
+		t.Errorf("Bad obj.UnknownName: %v", obj.UnknownName)
 	}
 }
 
