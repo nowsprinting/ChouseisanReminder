@@ -41,7 +41,7 @@
 ## 動作環境
 
 - Google App Engine SDK for Go 1.9.40
-- LINE BOT API Trial SDK/GO Version
+- Go SDK for the LINE Messaging API
 
 
 ## 設定ファイル
@@ -53,7 +53,7 @@
 `app.yaml`にはLINE BOTのキー情報などを含むため、リポジトリから除外している。下記の書式で`app.yaml`を作成すること
 
 	application: YOUR_APPLICATION_ID
-	version: 1
+	version: 2
 	runtime: go
 	api_version: go1
 
@@ -71,9 +71,8 @@
 
 	env_variables:
 	  CHOUSEISAN_EVENT_HASH: 'YOUR_EVENT_HASH'
-	  LINE_CHANNEL_ID: 'YOUR_CHANNEL_ID'
 	  LINE_CHANNEL_SECRET: 'YOUR_CHANNEL_SECRET'
-	  LINE_CHANNEL_MID: 'YOUR_CHANNEL_MID'
+      LINE_CHANNEL_ACCESS_TOKEN: `YOUR_ACCESS_TOKEN`
 
 ### LINE BOTのQRコード
 
@@ -82,12 +81,11 @@ LINE BOTのQRコードを`/img/linebot_qr.png`に置くこと（usage.htmlから
 
 ## LINE BOTについて
 
-- 現状はトライアル（BOT API Trial Account）
-	- https://business.line.me/services/products/4/introduction
+- トライアルで提供されていたBOT API Trialはdeprecatedされた。新しいMessaging APIを利用するよう書き換えた
+    - https://developers.line.me/messaging-api/overview
 - 開設したチャンネルの"Basic Information"にある"Callback URL"に、コールバックを受け取るURLを設定
 	- https://YOUR_PROJECT_ID.appspot.com:443/line/callback
-- 現状、BOTはグループに追加することができない。そのためリマインダを受けたいユーザは個々にBOTを友だち登録する必要がある
-- BOT API Trial Accountでは、友だち登録は50人まで。制限解除を申請すれば5,000人に拡張できる（要審査）
+- Messaging APIではBOTをグループに追加できる。しかし、本BOTは従来のBOT APIベースのため、リマインダを受けたいユーザは個々にBOTを友だち登録して利用する形式を取る
 
 
 ## 調整さんについて

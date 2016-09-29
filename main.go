@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"strconv"
 	"time"
 
 	"golang.org/x/net/context"
@@ -29,7 +28,7 @@ type subscriber struct {
 type logSubscriber struct {
 	DisplayName string
 	MID         string
-	OpType      linebot.OpType
+	OpType      string
 	AddTime     time.Time
 }
 
@@ -44,17 +43,11 @@ func init() {
 
 func createBotClient(c context.Context) (bot *linebot.Client, err error) {
 	var (
-		channelID     int64
 		channelSecret = os.Getenv("LINE_CHANNEL_SECRET")
-		channelMID    = os.Getenv("LINE_CHANNEL_MID")
+		channelToken  = os.Getenv("LINE_CHANNEL_ACCESS_TOKEN")
 	)
 
-	channelID, err = strconv.ParseInt(os.Getenv("LINE_CHANNEL_ID"), 10, 64)
-	if err != nil {
-		log.Errorf(c, "Error occurred at parse `LINE_CHANNEL_ID`: %v", err)
-		return bot, err
-	}
-	bot, err = linebot.NewClient(channelID, channelSecret, channelMID, linebot.WithHTTPClient(urlfetch.Client(c))) //Appengineのurlfetchを使用する
+	bot, err = linebot.New(channelSecret, channelToken, linebot.WithHTTPClient(urlfetch.Client(c))) //Appengineのurlfetchを使用する
 	if err != nil {
 		log.Errorf(c, "Error occurred at create linebot client: %v", err)
 		return bot, err
@@ -73,7 +66,7 @@ func lineCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	received, err := bot.ParseRequest(r)
+	events, err := bot.ParseRequest(r)
 	if err != nil {
 		if err == linebot.ErrInvalidSignature {
 			log.Warningf(c, "Linebot request status: 400")
@@ -84,47 +77,61 @@ func lineCallback(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
-	for _, result := range received.Results {
-		content := result.Content()
-		if content != nil {
-			if content.IsOperation {
-				//オペレーションイベント受信
-				opContent, err := content.OperationContent()
-				if err != nil {
-					log.Errorf(c, "Error occurred at get operation content: %v", err)
-					return
-				}
+	for _, event := range events {
+		source := event.Source
+		if event.Type == linebot.EventTypeFollow {
+			task := taskqueue.NewPOSTTask("/task/addfriend", url.Values{
+				"mid": {source.UserID},
+			})
+			taskqueue.Add(c, task, "default")
 
-				if content.OpType == linebot.OpTypeAddedAsFriend {
-					task := taskqueue.NewPOSTTask("/task/addfriend", url.Values{
-						"mid": {opContent.Params[0]},
+		} else if event.Type == linebot.EventTypeUnfollow {
+			task := taskqueue.NewPOSTTask("/task/removefriend", url.Values{
+				"mid": {source.UserID},
+			})
+			taskqueue.Add(c, task, "default")
+
+		} else if event.Type == linebot.EventTypeMessage {
+			switch message := event.Message.(type) {
+			case *linebot.TextMessage:
+				if source.Type == linebot.EventSourceTypeUser {
+					//テキストメッセージ受信 from User
+					task := taskqueue.NewPOSTTask("/task/analyzecommand", url.Values{
+						"token": {event.ReplyToken},
+						"mid":   {source.UserID},
+						"text":  {"from user: " + message.Text},
 					})
 					taskqueue.Add(c, task, "default")
 
-				} else if content.OpType == linebot.OpTypeBlocked {
-					task := taskqueue.NewPOSTTask("/task/removefriend", url.Values{
-						"mid": {opContent.Params[0]},
+				} else if source.Type == linebot.EventSourceTypeRoom {
+					//テキストメッセージ受信 from Room
+					task := taskqueue.NewPOSTTask("/task/analyzecommand", url.Values{
+						"token": {event.ReplyToken},
+						"mid":   {source.RoomID},
+						"text":  {"from room: " + message.Text},
 					})
 					taskqueue.Add(c, task, "default")
 
-				} else {
-					log.Warningf(c, "Unknown OpType received. OpType=%v", content.OpType)
+				} else if source.Type == linebot.EventSourceTypeGroup {
+					//テキストメッセージ受信 from Group
+					task := taskqueue.NewPOSTTask("/task/analyzecommand", url.Values{
+						"token": {event.ReplyToken},
+						"mid":   {source.GroupID},
+						"text":  {"from group: " + message.Text},
+					})
+					taskqueue.Add(c, task, "default")
 				}
-
-			} else if content.IsMessage && content.ContentType == linebot.ContentTypeText {
-				//テキストメッセージ受信
-				text, err := content.TextContent()
-				if err != nil {
-					log.Errorf(c, "Error occurred at parse text context: %v", err)
-					return
-				}
-
-				task := taskqueue.NewPOSTTask("/task/analyzecommand", url.Values{
-					"mid":  {content.From},
-					"text": {text.Text},
-				})
-				taskqueue.Add(c, task, "default")
 			}
+
+		} else {
+			//未サポートのイベントタイプ
+			task := taskqueue.NewPOSTTask("/task/analyzecommand", url.Values{
+				"token": {event.ReplyToken},
+				"mid":   {"mid"},
+				"text":  {"received event: " + string(event.Type)},
+			})
+			taskqueue.Add(c, task, "default")
+
 		}
 	}
 }
@@ -132,13 +139,13 @@ func lineCallback(w http.ResponseWriter, r *http.Request) {
 /**
  * 送信者の情報を取得する
  */
-func getSenderProfile(c context.Context, bot *linebot.Client, from string) (linebot.ContactInfo, error) {
-	senderProfile, err := bot.GetUserProfile([]string{from})
+func getSenderName(c context.Context, bot *linebot.Client, from string) string {
+	senderProfile, err := bot.GetProfile(from).Do()
 	if err != nil {
 		log.Errorf(c, "Error occurred at get sender profile. from: %v, err: %v", from, err)
-		return linebot.ContactInfo{}, err
+		return from
 	}
-	return senderProfile.Contacts[0], nil //添字は0固定
+	return senderProfile.DisplayName
 }
 
 /**
@@ -153,16 +160,15 @@ func sendToAll(c context.Context, bot *linebot.Client, message string) error {
 		log.Errorf(c, "Error occurred at get-all from datastore. err: %v", err)
 		return err
 	}
-	mids := make([]string, len(subscribers))
-	for i, current := range subscribers {
-		mids[i] = current.MID
-	}
 
 	//全員に送信
-	if _, err := bot.SendText(mids, message); err != nil {
-		log.Errorf(c, "Error occurred at send message: %v", err)
-		return err
+	for _, current := range subscribers {
+		if _, err := bot.PushMessage(current.MID, linebot.NewTextMessage(message)).Do(); err != nil {
+			log.Errorf(c, "Error occurred at send message: %v", err)
+			return err
+		}
 	}
+
 	return nil
 }
 
@@ -178,14 +184,11 @@ func addFriend(w http.ResponseWriter, r *http.Request) {
 
 	//購読者プロファイルを取得
 	mid := r.FormValue("mid")
-	sender, err := getSenderProfile(c, bot, mid)
-	if err != nil {
-		return
-	}
+	senderName := getSenderName(c, bot, mid)
 
 	//購読者を保存
 	entity := subscriber{
-		DisplayName: sender.DisplayName,
+		DisplayName: senderName,
 		MID:         mid,
 	}
 	key := datastore.NewKey(c, "Subscriber", mid, 0, nil)
@@ -196,9 +199,9 @@ func addFriend(w http.ResponseWriter, r *http.Request) {
 
 	//ログエントリを追加
 	logEntity := logSubscriber{
-		DisplayName: sender.DisplayName,
+		DisplayName: senderName,
 		MID:         mid,
-		OpType:      linebot.OpTypeAddedAsFriend,
+		OpType:      string(linebot.EventTypeFollow),
 		AddTime:     time.Now(),
 	}
 	logKey := datastore.NewIncompleteKey(c, "LogSubscriber", nil)
@@ -207,7 +210,7 @@ func addFriend(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sendToAll(c, bot, sender.DisplayName+"さんが購読を開始しました。いらっしゃいませ！！")
+	sendToAll(c, bot, senderName+"さんが購読を開始しました。いらっしゃいませ！！")
 }
 
 /**
@@ -222,10 +225,7 @@ func removeFriend(w http.ResponseWriter, r *http.Request) {
 
 	//購読者プロファイルを取得
 	mid := r.FormValue("mid")
-	sender, err := getSenderProfile(c, bot, mid)
-	if err != nil {
-		return
-	}
+	senderName := getSenderName(c, bot, mid)
 
 	//購読者を削除
 	key := datastore.NewKey(c, "Subscriber", mid, 0, nil)
@@ -236,9 +236,9 @@ func removeFriend(w http.ResponseWriter, r *http.Request) {
 
 	//ログエントリを追加
 	logEntity := logSubscriber{
-		DisplayName: sender.DisplayName,
+		DisplayName: senderName,
 		MID:         mid,
-		OpType:      linebot.OpTypeBlocked,
+		OpType:      string(linebot.EventTypeUnfollow),
 		AddTime:     time.Now(),
 	}
 	logKey := datastore.NewIncompleteKey(c, "LogSubscriber", nil)
@@ -247,7 +247,7 @@ func removeFriend(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sendToAll(c, bot, sender.DisplayName+"さんが購読を解除しました。さようなら！")
+	sendToAll(c, bot, senderName+"さんが購読を解除しました。さようなら！")
 }
 
 /**
@@ -265,11 +265,8 @@ func analyzeCommand(w http.ResponseWriter, r *http.Request) {
 	//TODO: コマンドに応じて応答を変える
 
 	//default: 全員にブロードキャスト
-	sender, err := getSenderProfile(c, bot, mid)
-	if err != nil {
-		return
-	}
-	sendToAll(c, bot, sender.DisplayName+"さんより\n「"+text+"」")
+	senderName := getSenderName(c, bot, mid)
+	sendToAll(c, bot, senderName+"さんより\n「"+text+"」")
 }
 
 /**
