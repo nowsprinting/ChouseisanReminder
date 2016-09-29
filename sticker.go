@@ -60,7 +60,7 @@ func shareSticker(w http.ResponseWriter, r *http.Request) {
 
 	//全員にスタンプを送信
 	if _, err := bot.SendSticker(mids, stkid, stkpkgid, stkver); err != nil {
-		log.Errorf(c, "Error occurred at send message: %v", err)
+		log.Errorf(c, "Error occurred at send sticker: %v", err)
 		return
 	}
 }
