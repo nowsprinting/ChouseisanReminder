@@ -44,7 +44,7 @@ func createRequest(instance aetest.Instance, url string, file string) (*http.Req
 	hash := hmac.New(sha256.New, []byte(channelSecret))
 	hash.Write(byteBody)
 	encoded := base64.StdEncoding.EncodeToString(hash.Sum(nil))
-	req.Header.Add("X-LINE-ChannelSignature", encoded)
+	req.Header.Add("X-LINE-Signature", encoded)
 
 	return req, nil
 }
