@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strings"
 	"time"
 
 	"golang.org/x/net/context"
@@ -97,27 +98,30 @@ func lineCallback(w http.ResponseWriter, r *http.Request) {
 				if source.Type == linebot.EventSourceTypeUser {
 					//テキストメッセージ受信 from User
 					task := taskqueue.NewPOSTTask("/task/analyzecommand", url.Values{
-						"token": {event.ReplyToken},
-						"mid":   {source.UserID},
-						"text":  {message.Text},
+						"token":  {event.ReplyToken},
+						"source": {string(source.Type)},
+						"mid":    {source.UserID},
+						"text":   {message.Text},
 					})
 					taskqueue.Add(c, task, "default")
 
 				} else if source.Type == linebot.EventSourceTypeRoom {
 					//テキストメッセージ受信 from Room
 					task := taskqueue.NewPOSTTask("/task/analyzecommand", url.Values{
-						"token": {event.ReplyToken},
-						"mid":   {source.RoomID},
-						"text":  {message.Text},
+						"token":  {event.ReplyToken},
+						"source": {string(source.Type)},
+						"mid":    {source.RoomID},
+						"text":   {message.Text},
 					})
 					taskqueue.Add(c, task, "default")
 
 				} else if source.Type == linebot.EventSourceTypeGroup {
 					//テキストメッセージ受信 from Group
 					task := taskqueue.NewPOSTTask("/task/analyzecommand", url.Values{
-						"token": {event.ReplyToken},
-						"mid":   {source.GroupID},
-						"text":  {message.Text},
+						"token":  {event.ReplyToken},
+						"source": {string(source.Type)},
+						"mid":    {source.GroupID},
+						"text":   {message.Text},
 					})
 					taskqueue.Add(c, task, "default")
 				}
@@ -151,6 +155,18 @@ func lineCallback(w http.ResponseWriter, r *http.Request) {
 			})
 			taskqueue.Add(c, task, "default")
 
+		} else if event.Type == linebot.EventTypePostback {
+			if source.Type == linebot.EventSourceTypeUser {
+				log.Infof(c, "Postback from User. id=%v", source.UserID)
+			} else if source.Type == linebot.EventSourceTypeGroup {
+				log.Infof(c, "Postback from Group. id=%v", source.GroupID)
+			} else if source.Type == linebot.EventSourceTypeRoom {
+				log.Infof(c, "Postback from Room. id=%v", source.RoomID)
+			}
+			if err = replyText(bot, event.ReplyToken, "Receive postback event. data="+event.Postback.Data); err != nil {
+				log.Errorf(c, "Error occurred at receive postback event. err: %v", err)
+			}
+
 		} else {
 			//未サポートのイベントタイプ
 			var mid = "unknown"
@@ -165,9 +181,10 @@ func lineCallback(w http.ResponseWriter, r *http.Request) {
 				log.Infof(c, "Unsupported event(%v) from Room. id=%v", string(event.Type), mid)
 			}
 			task := taskqueue.NewPOSTTask("/task/analyzecommand", url.Values{
-				"token": {event.ReplyToken},
-				"mid":   {mid},
-				"text":  {"received event: " + string(event.Type)},
+				"token":  {event.ReplyToken},
+				"source": {string(source.Type)},
+				"mid":    {mid},
+				"text":   {"received event: " + string(event.Type)},
 			})
 			taskqueue.Add(c, task, "default")
 
@@ -290,6 +307,19 @@ func removeFriend(w http.ResponseWriter, r *http.Request) {
 }
 
 /**
+ * リプライメッセージを送る
+ */
+func replyText(bot *linebot.Client, replyToken string, text string) error {
+	if _, err := bot.ReplyMessage(
+		replyToken,
+		linebot.NewTextMessage(text),
+	).Do(); err != nil {
+		return err
+	}
+	return nil
+}
+
+/**
  * チャットコマンド解析（コマンドに応じたメッセージを送信）
  */
 func analyzeCommand(w http.ResponseWriter, r *http.Request) {
@@ -298,14 +328,55 @@ func analyzeCommand(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		return
 	}
+	token := r.FormValue("token")
+	source := r.FormValue("source")
 	mid := r.FormValue("mid")
 	text := r.FormValue("text")
 
-	//TODO: コマンドに応じて応答を変える
+	//コマンド解析
+	switch strings.ToLower(text) {
+	case "leave":
+		if source == "group" {
+			if _, err = bot.LeaveGroup(mid).Do(); err != nil {
+				log.Errorf(c, "Error occurred at leave from group. mid:%v, err: %v", mid, err)
+				replyText(bot, token, err.Error())
+			}
+			if err = replyText(bot, token, "Leaving group"); err != nil {
+				log.Errorf(c, "Error occurred at `leave` command. mid:%v, err: %v", mid, err)
+			}
 
-	//default: 全員にブロードキャスト
-	senderName := getSenderName(c, bot, mid)
-	sendToAll(c, bot, senderName+"さんより\n「"+text+"」")
+		} else if source == "room" {
+			if _, err = bot.LeaveRoom(mid).Do(); err != nil {
+				log.Errorf(c, "Error occurred at leave from room. mid:%v, err: %v", mid, err)
+				replyText(bot, token, err.Error())
+			}
+			if err = replyText(bot, token, "Leaving room"); err != nil {
+				log.Errorf(c, "Error occurred at `leave` command. mid:%v, err: %v", mid, err)
+			}
+		}
+
+	case "buttons":
+		template := linebot.NewButtonsTemplate(
+			"https://blog.golang.org/gopher/gopher.png",
+			"My button sample",
+			"Hello, my button",
+			linebot.NewURITemplateAction("Go to line.me", "https://line.me"),
+			linebot.NewPostbackTemplateAction("Say hello1", "hello こんにちは", ""),
+			linebot.NewPostbackTemplateAction("言 hello2", "hello こんにちは", "hello こんにちは"),
+			linebot.NewMessageTemplateAction("Say message", "Rice=米"),
+		)
+		if _, err := bot.ReplyMessage(
+			token,
+			linebot.NewTemplateMessage("Buttons alt text", template),
+		).Do(); err != nil {
+			log.Errorf(c, "Error occurred at `buttons` command. mid:%v, err: %v", mid, err)
+		}
+
+	default:
+		//全員にブロードキャスト
+		senderName := getSenderName(c, bot, mid)
+		sendToAll(c, bot, senderName+"さんより\n「"+text+"」")
+	}
 }
 
 /**
