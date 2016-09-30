@@ -123,11 +123,50 @@ func lineCallback(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 
+		} else if event.Type == linebot.EventTypeJoin {
+			var mid = "unknown"
+			if source.Type == linebot.EventSourceTypeGroup {
+				mid = source.GroupID
+				log.Infof(c, "Join request from Group. id=%v", mid)
+			} else if source.Type == linebot.EventSourceTypeRoom {
+				mid = source.RoomID
+				log.Infof(c, "Join request from Room. id=%v", mid)
+			}
+			task := taskqueue.NewPOSTTask("/task/addfriend", url.Values{
+				"mid": {mid},
+			})
+			taskqueue.Add(c, task, "default")
+
+		} else if event.Type == linebot.EventTypeLeave {
+			var mid = "unknown"
+			if source.Type == linebot.EventSourceTypeGroup {
+				mid = source.GroupID
+				log.Infof(c, "Leave request from Group. id=%v", mid)
+			} else if source.Type == linebot.EventSourceTypeRoom {
+				mid = source.RoomID
+				log.Infof(c, "Leave request from Room. id=%v", mid)
+			}
+			task := taskqueue.NewPOSTTask("/task/removefriend", url.Values{
+				"mid": {mid},
+			})
+			taskqueue.Add(c, task, "default")
+
 		} else {
 			//未サポートのイベントタイプ
+			var mid = "unknown"
+			if source.Type == linebot.EventSourceTypeUser {
+				mid = source.UserID
+				log.Infof(c, "Unsupported event(%v) from User. id=%v", string(event.Type), mid)
+			} else if source.Type == linebot.EventSourceTypeGroup {
+				mid = source.GroupID
+				log.Infof(c, "Unsupported event(%v) from Group. id=%v", string(event.Type), mid)
+			} else if source.Type == linebot.EventSourceTypeRoom {
+				mid = source.RoomID
+				log.Infof(c, "Unsupported event(%v) from Room. id=%v", string(event.Type), mid)
+			}
 			task := taskqueue.NewPOSTTask("/task/analyzecommand", url.Values{
 				"token": {event.ReplyToken},
-				"mid":   {"mid"},
+				"mid":   {mid},
 				"text":  {"received event: " + string(event.Type)},
 			})
 			taskqueue.Add(c, task, "default")
