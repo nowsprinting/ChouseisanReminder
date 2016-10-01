@@ -385,6 +385,26 @@ func analyzeCommand(w http.ResponseWriter, r *http.Request) {
 			log.Errorf(c, "Error occurred at `confirm` command. mid:%v, err: %v", mid, err)
 		}
 
+	case "carousel":
+		template := linebot.NewCarouselTemplate(
+			linebot.NewCarouselColumn(
+				"https://blog.golang.org/gopher/gopher.png", "hoge", "fuga",
+				linebot.NewURITemplateAction("Go to line.me", "https://line.me"),
+				linebot.NewPostbackTemplateAction("Say hello1", "hello こんにちは", ""),
+			),
+			linebot.NewCarouselColumn(
+				"https://blog.golang.org/gopher/gopher.png", "hoge", "fuga",
+				linebot.NewPostbackTemplateAction("言 hello2", "hello こんにちは", "hello こんにちは"),
+				linebot.NewMessageTemplateAction("Say message", "Rice=米"),
+			),
+		)
+		if _, err := bot.ReplyMessage(
+			token,
+			linebot.NewTemplateMessage("Carousel alt text", template),
+		).Do(); err != nil {
+			log.Errorf(c, "Error occurred at `carousel` command. mid:%v, err: %v", mid, err)
+		}
+
 	default:
 		//全員にブロードキャスト
 		senderName := getSenderName(c, bot, mid)
