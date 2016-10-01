@@ -372,6 +372,19 @@ func analyzeCommand(w http.ResponseWriter, r *http.Request) {
 			log.Errorf(c, "Error occurred at `buttons` command. mid:%v, err: %v", mid, err)
 		}
 
+	case "confirm":
+		template := linebot.NewConfirmTemplate(
+			"Do it?",
+			linebot.NewMessageTemplateAction("Yes", "Yes!"),
+			linebot.NewMessageTemplateAction("No", "No!"),
+		)
+		if _, err := bot.ReplyMessage(
+			token,
+			linebot.NewTemplateMessage("Confirm alt text", template),
+		).Do(); err != nil {
+			log.Errorf(c, "Error occurred at `confirm` command. mid:%v, err: %v", mid, err)
+		}
+
 	default:
 		//全員にブロードキャスト
 		senderName := getSenderName(c, bot, mid)
