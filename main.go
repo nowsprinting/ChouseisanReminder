@@ -99,7 +99,7 @@ func lineCallback(w http.ResponseWriter, r *http.Request) {
 					task := taskqueue.NewPOSTTask("/task/analyzecommand", url.Values{
 						"token": {event.ReplyToken},
 						"mid":   {source.UserID},
-						"text":  {"from user: " + message.Text},
+						"text":  {message.Text},
 					})
 					taskqueue.Add(c, task, "default")
 
@@ -108,7 +108,7 @@ func lineCallback(w http.ResponseWriter, r *http.Request) {
 					task := taskqueue.NewPOSTTask("/task/analyzecommand", url.Values{
 						"token": {event.ReplyToken},
 						"mid":   {source.RoomID},
-						"text":  {"from room: " + message.Text},
+						"text":  {message.Text},
 					})
 					taskqueue.Add(c, task, "default")
 
@@ -117,7 +117,7 @@ func lineCallback(w http.ResponseWriter, r *http.Request) {
 					task := taskqueue.NewPOSTTask("/task/analyzecommand", url.Values{
 						"token": {event.ReplyToken},
 						"mid":   {source.GroupID},
-						"text":  {"from group: " + message.Text},
+						"text":  {message.Text},
 					})
 					taskqueue.Add(c, task, "default")
 				}
