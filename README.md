@@ -81,11 +81,11 @@ LINE BOTのQRコードを`/img/linebot_qr.png`に置くこと（usage.htmlから
 
 ## LINE BOTについて
 
-- トライアルで提供されていたBOT API Trialはdeprecatedされた。新しいMessaging APIを利用するよう書き換えた
-    - https://developers.line.me/messaging-api/overview
-- 開設したチャンネルの"Basic Information"にある"Callback URL"に、コールバックを受け取るURLを設定
-	- https://YOUR_PROJECT_ID.appspot.com:443/line/callback
-- Messaging APIではBOTをグループに追加できる。しかし、本BOTは従来のBOT APIベースのため、リマインダを受けたいユーザは個々にBOTを友だち登録して利用する形式を取る
+- トライアルで提供されていた BOT API Trialはdeprecatedされたため、新しいMessaging APIを利用するよう書き換えた。
+    - see: https://developers.line.me/messaging-api/overview
+- 開設したチャンネルの"Basic Information"にある"Callback URL"に、コールバックを受け取るURLを設定する必要がある。以下のように設定する。
+	- https:// YOUR-PROJECT-ID .appspot.com:443/line/callback
+- 新しいMessaging APIではBOTをグループに追加できるが、本BOTは従来のBOT APIベースのため、リマインダを受けたいユーザは個々にBOTを友だち登録して利用する形式を取る。
 
 
 ## 調整さんについて
