@@ -26,7 +26,7 @@ _testmain.go
 # cover
 coverage.out
 
-# App Engile application's setting file
+# App Engine application's setting file
 app.yaml
 
 # LINE BOT QR Code file
