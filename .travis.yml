@@ -18,7 +18,7 @@ install:
   - goapp get golang.org/x/text/transform
 
 script:
-  - ./runtest.sh
+  - make test
 
 after_success:
   - $GOPATH/bin/goveralls -coverprofile=coverage.out -service=travis-ci -repotoken $COVERALLS_TOKEN
