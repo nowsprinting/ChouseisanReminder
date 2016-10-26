@@ -15,6 +15,7 @@ import (
 	"golang.org/x/text/transform"
 
 	"google.golang.org/appengine"
+	"google.golang.org/appengine/datastore"
 	"google.golang.org/appengine/log"
 	"google.golang.org/appengine/urlfetch"
 )
@@ -197,18 +198,28 @@ func crawlChouseisanWithContext(c context.Context, client *http.Client, w http.R
 		return
 	}
 
-	//TODO: まずリファクタリング。購読者は決め打ちで1件のみ（あとでループ化する）
-	cSubscriber := subscriber{
-		MID:            "C00000000000000000000000000000000",
-		ChouseisanHash: "3f7ffd73ba174332ae05bd363eba8e71",
-	}
-	result := chouseisanIterator(&cSubscriber, c, client, w, r)
+	//hashの入ってるエンティティを抽出してループ
+	ite := datastore.NewQuery("Subscriber").Run(c)
+	for {
+		var cSubscriber subscriber
+		_, err = ite.Next(&cSubscriber)
+		if err == datastore.Done {
+			break
+		} else if err != nil {
+			log.Errorf(c, "Error occurred at fetch subscriber. err:%v", err)
+			break
+		}
+		if cSubscriber.ChouseisanHash != "" {
+			// ハッシュが設定されていれば、調整さんイベントをクロール
+			result := chouseisanIterator(&cSubscriber, c, client, w, r)
 
-	// リマインド対象スケジュールがあれば、Push Messageで送信
-	for _, v := range result {
-		message := v.constructSummary(cSubscriber.ChouseisanHash)
-		if _, err = bot.PushMessage(cSubscriber.MID, linebot.NewTextMessage(message)).Do(); err != nil {
-			log.Errorf(c, "Error occurred at crawl chouseisan. mid:%v, err: %v", cSubscriber.MID, err)
+			// リマインド対象イベントがあれば、Push Messageを送信
+			for _, v := range result {
+				message := v.constructSummary(cSubscriber.ChouseisanHash)
+				if _, err = bot.PushMessage(cSubscriber.MID, linebot.NewTextMessage(message)).Do(); err != nil {
+					log.Errorf(c, "Error occurred at crawl chouseisan. mid:%v, err: %v", cSubscriber.MID, err)
+				}
+			}
 		}
 	}
 }

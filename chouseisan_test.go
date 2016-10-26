@@ -11,6 +11,7 @@ import (
 
 	"google.golang.org/appengine"
 	"google.golang.org/appengine/aetest"
+	"google.golang.org/appengine/datastore"
 	"google.golang.org/appengine/urlfetch"
 )
 
@@ -263,6 +264,83 @@ func TestCrawlChouseisan(t *testing.T) {
 		"https://api.line.me/v2/bot/message/push",
 		httpmock.NewStringResponder(200, "{}"),
 	)
+
+	// 購読者エンティティを用意しておく
+	entities := []subscriber{
+		{
+			MID:            "C00000000000000000000000000000000",
+			ChouseisanHash: "3f7ffd73ba174332ae05bd363eba8e71",
+		}, {
+			MID:            "R00000000000000000000000000000001",
+			ChouseisanHash: "11111111111111111111111111111111",
+		}, {
+			MID:            "U00000000000000000000000000000002",
+			ChouseisanHash: "22222222222222222222222222222222",
+		}}
+	for _, current := range entities {
+		key := datastore.NewKey(ctx, "Subscriber", current.MID, 0, nil)
+		if _, err = datastore.Put(ctx, key, &current); err != nil {
+			t.Fatal(err)
+			return
+		}
+	}
+
+	// execute
+	res := httptest.NewRecorder()
+	crawlChouseisanWithContext(ctx, client, res, req) //モックと同じhttp.Clientインスタンスを渡す
+
+	// リクエストは正常終了していること
+	if res.Code != http.StatusOK {
+		t.Fatalf("Non-expected status code: %v\n\tbody: %v", res.Code, res.Body)
+	}
+}
+
+/**
+ * 調整さんクロール処理のテスト（対象の購読者エンティティなし）
+ */
+func TestCrawlChouseisanZeroSubscriber(t *testing.T) {
+	opt := aetest.Options{StronglyConsistentDatastore: true} //データストアに即反映
+	instance, err := aetest.NewInstance(&opt)
+	if err != nil {
+		t.Fatalf("Failed to create aetest instance: %v", err)
+	}
+	defer instance.Close()
+
+	// http.Requestを生成
+	req, err := instance.NewRequest("POST", "/cron/crawlchouseisan", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded") //必須
+
+	// Contextとhttp.Clientは、テストコード側でインスタンス化する（モックと共通のインスタンスを使う必要があるため）
+	ctx := appengine.NewContext(req)
+	client := urlfetch.Client(ctx)
+
+	// 調整さんへのリクエストをモックする
+	httpmock.ActivateNonDefault(client)
+	defer httpmock.DeactivateAndReset()
+	httpmock.RegisterResponder("GET",
+		"https://chouseisan.com/schedule/List/createCsv",
+		httpmock.NewStringResponder(200, readFile(t, "testdata/chouseisan/normally.csv")),
+	)
+
+	// LINEへのPush Messageリクエストをモックする
+	httpmock.RegisterResponder("POST",
+		"https://api.line.me/v2/bot/message/push",
+		httpmock.NewStringResponder(200, "{}"),
+	)
+
+	// 購読者エンティティは1件だが、調整さんハッシュは持っていない
+	entity := subscriber{
+		MID:            "C00000000000000000000000000000000",
+		ChouseisanHash: "",
+	}
+	key := datastore.NewKey(ctx, "Subscriber", "C00000000000000000000000000000000", 0, nil)
+	if _, err = datastore.Put(ctx, key, &entity); err != nil {
+		t.Fatal(err)
+		return
+	}
 
 	// execute
 	res := httptest.NewRecorder()
