@@ -14,6 +14,8 @@ import (
 
 /**
  * 友だち削除（データストアから削除）
+ *
+ * 引数にContextとhttp.Clientを取るインナーメソッド
  */
 func leaveWithContext(c context.Context, client *http.Client, w http.ResponseWriter, r *http.Request) {
 	bot, err := createBotClient(c, client)

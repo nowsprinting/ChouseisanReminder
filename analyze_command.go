@@ -3,6 +3,8 @@ package main
 import (
 	"net/http"
 
+	"golang.org/x/net/context"
+
 	"github.com/line/line-bot-sdk-go/linebot"
 
 	"google.golang.org/appengine"
@@ -12,10 +14,11 @@ import (
 
 /**
  * コマンド解析
+ *
+ * 引数にContextとhttp.Clientを取るインナーメソッド
  */
-func analyzeCommand(w http.ResponseWriter, r *http.Request) {
-	c := appengine.NewContext(r)
-	bot, err := createBotClient(c, urlfetch.Client(c))
+func analyzeCommandWithContext(c context.Context, client *http.Client, w http.ResponseWriter, r *http.Request) {
+	bot, err := createBotClient(c, client)
 	if err != nil {
 		return
 	}
@@ -28,4 +31,12 @@ func analyzeCommand(w http.ResponseWriter, r *http.Request) {
 	if _, err = bot.ReplyMessage(r.FormValue("replyToken"), linebot.NewTextMessage(message)).Do(); err != nil {
 		log.Errorf(c, "Error occurred at reply-message for command. mid:%v, err: %v", mid, err)
 	}
+}
+
+/**
+ * コマンド解析
+ */
+func analyzeCommand(w http.ResponseWriter, r *http.Request) {
+	c := appengine.NewContext(r)
+	analyzeCommandWithContext(c, urlfetch.Client(c), w, r)
 }
