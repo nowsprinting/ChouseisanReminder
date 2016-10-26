@@ -182,11 +182,11 @@ func crawlChouseisan(w http.ResponseWriter, r *http.Request) {
  */
 func sendSchedule(c context.Context, obj *schedule) {
 	//メッセージを組み立てて送信
-	bot, err := createBotClient(c)
-	if err != nil {
-		return
-	}
-	msg := obj.DateString + "の出欠状況をお知らせします\n参加: " + strconv.Itoa(obj.Present) + "名" + obj.ParticipantsName + "\n不参加: " + strconv.Itoa(obj.Absent) + "名\n不明/未入力: " + strconv.Itoa(obj.Unknown) + "名" + obj.UnknownName + "\n\n詳細および出欠変更は「調整さん」へ\nhttps://chouseisan.com/s?h=" + os.Getenv("CHOUSEISAN_EVENT_HASH")
-	sendToAll(c, bot, msg)
+	// bot, err := createBotClient(c)
+	// if err != nil {
+	// 	return
+	// }
+	// msg := obj.DateString + "の出欠状況をお知らせします\n参加: " + strconv.Itoa(obj.Present) + "名" + obj.ParticipantsName + "\n不参加: " + strconv.Itoa(obj.Absent) + "名\n不明/未入力: " + strconv.Itoa(obj.Unknown) + "名" + obj.UnknownName + "\n\n詳細および出欠変更は「調整さん」へ\nhttps://chouseisan.com/s?h=" + os.Getenv("CHOUSEISAN_EVENT_HASH")
+	// sendToAll(c, bot, msg)
 	return
 }
