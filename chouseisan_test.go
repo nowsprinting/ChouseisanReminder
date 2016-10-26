@@ -1,11 +1,17 @@
 package main
 
 import (
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"testing"
 	"time"
 
+	"github.com/jarcoal/httpmock"
+
+	"google.golang.org/appengine"
 	"google.golang.org/appengine/aetest"
+	"google.golang.org/appengine/urlfetch"
 )
 
 /**
@@ -14,7 +20,7 @@ import (
 func TestParseCsvNormally(t *testing.T) {
 	var (
 		objDay time.Time
-		obj    *schedule
+		obj    schedule
 		exist  bool
 		err    error
 	)
@@ -65,7 +71,7 @@ func TestParseCsvNormally(t *testing.T) {
 func TestParseCsvNormallyNextYear(t *testing.T) {
 	var (
 		objDay time.Time
-		obj    *schedule
+		obj    schedule
 		exist  bool
 		err    error
 	)
@@ -116,7 +122,7 @@ func TestParseCsvNormallyNextYear(t *testing.T) {
 func TestParseCsvNormallyNoCol(t *testing.T) {
 	var (
 		objDay time.Time
-		obj    *schedule
+		obj    schedule
 		exist  bool
 		err    error
 	)
@@ -167,7 +173,7 @@ func TestParseCsvNormallyNoCol(t *testing.T) {
 func TestParseCsvNormallyNoRow(t *testing.T) {
 	var (
 		objDay time.Time
-		obj    *schedule
+		obj    schedule
 		exist  bool
 		err    error
 	)
@@ -202,9 +208,6 @@ func TestParseCsvNormallyNoRow(t *testing.T) {
  */
 func TestParseCsvInvalidDateFormat(t *testing.T) {
 	var (
-		// objDay time.Time
-		// obj    *schedule
-		// exist  bool
 		err error
 	)
 	c, done, err := aetest.NewContext()
@@ -222,6 +225,51 @@ func TestParseCsvInvalidDateFormat(t *testing.T) {
 
 	tz, _ := time.LoadLocation("Asia/Tokyo")
 	today := time.Date(2016, time.December, 1, 0, 0, 0, 0, tz)
-	parseCsv(c, testdata, today)
-	//パースできていればok
+	parseCsv(c, testdata, today) //パースできていればok
+}
+
+/**
+ * 調整さんクロール処理のテスト（正常系）
+ */
+func TestCrawlChouseisan(t *testing.T) {
+	opt := aetest.Options{StronglyConsistentDatastore: true} //データストアに即反映
+	instance, err := aetest.NewInstance(&opt)
+	if err != nil {
+		t.Fatalf("Failed to create aetest instance: %v", err)
+	}
+	defer instance.Close()
+
+	// http.Requestを生成
+	req, err := instance.NewRequest("POST", "/cron/crawlchouseisan", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded") //必須
+
+	// Contextとhttp.Clientは、テストコード側でインスタンス化する（モックと共通のインスタンスを使う必要があるため）
+	ctx := appengine.NewContext(req)
+	client := urlfetch.Client(ctx)
+
+	// 調整さんへのリクエストをモックする
+	httpmock.ActivateNonDefault(client)
+	defer httpmock.DeactivateAndReset()
+	httpmock.RegisterResponder("GET",
+		"https://chouseisan.com/schedule/List/createCsv",
+		httpmock.NewStringResponder(200, readFile(t, "testdata/chouseisan/normally.csv")),
+	)
+
+	// LINEへのPush Messageリクエストをモックする
+	httpmock.RegisterResponder("POST",
+		"https://api.line.me/v2/bot/message/push",
+		httpmock.NewStringResponder(200, "{}"),
+	)
+
+	// execute
+	res := httptest.NewRecorder()
+	crawlChouseisanWithContext(ctx, client, res, req) //モックと同じhttp.Clientインスタンスを渡す
+
+	// リクエストは正常終了していること
+	if res.Code != http.StatusOK {
+		t.Fatalf("Non-expected status code: %v\n\tbody: %v", res.Code, res.Body)
+	}
 }
