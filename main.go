@@ -42,13 +42,13 @@ func init() {
 	http.HandleFunc("/", usage)
 }
 
-func createBotClient(c context.Context) (bot *linebot.Client, err error) {
+func createBotClient(c context.Context, client *http.Client) (bot *linebot.Client, err error) {
 	var (
 		channelSecret = os.Getenv("LINE_CHANNEL_SECRET")
 		channelToken  = os.Getenv("LINE_CHANNEL_ACCESS_TOKEN")
 	)
 
-	bot, err = linebot.New(channelSecret, channelToken, linebot.WithHTTPClient(urlfetch.Client(c))) //Appengineのurlfetchを使用する
+	bot, err = linebot.New(channelSecret, channelToken, linebot.WithHTTPClient(client)) //Appengineのurlfetchを使用する
 	if err != nil {
 		log.Errorf(c, "Error occurred at create linebot client: %v", err)
 		return bot, err
@@ -78,7 +78,7 @@ func getSenderID(c context.Context, event *linebot.Event) string {
 func lineCallback(w http.ResponseWriter, r *http.Request) {
 
 	c := appengine.NewContext(r)
-	bot, err := createBotClient(c)
+	bot, err := createBotClient(c, urlfetch.Client(c))
 	if err != nil {
 		return
 	}

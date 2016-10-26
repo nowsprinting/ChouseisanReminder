@@ -10,6 +10,7 @@ import (
 	"google.golang.org/appengine"
 	"google.golang.org/appengine/datastore"
 	"google.golang.org/appengine/log"
+	"google.golang.org/appengine/urlfetch"
 )
 
 /**
@@ -34,10 +35,11 @@ func getSenderName(c context.Context, bot *linebot.Client, from string) string {
 
 /**
  * 友だち追加（データストアに購読者として登録）
+ *
+ * 引数にContextとhttp.Clientを取るインナーメソッド
  */
-func join(w http.ResponseWriter, r *http.Request) {
-	c := appengine.NewContext(r)
-	bot, err := createBotClient(c)
+func joinWithContext(c context.Context, client *http.Client, w http.ResponseWriter, r *http.Request) {
+	bot, err := createBotClient(c, client)
 	if err != nil {
 		return
 	}
@@ -78,4 +80,12 @@ func join(w http.ResponseWriter, r *http.Request) {
 	if _, err = bot.ReplyMessage(r.FormValue("replyToken"), linebot.NewTextMessage(message)).Do(); err != nil {
 		log.Errorf(c, "Error occurred at reply-message for follow/join. mid:%v, err: %v", mid, err)
 	}
+}
+
+/**
+ * 友だち追加（データストアに購読者として登録）
+ */
+func join(w http.ResponseWriter, r *http.Request) {
+	c := appengine.NewContext(r)
+	joinWithContext(c, urlfetch.Client(c), w, r)
 }

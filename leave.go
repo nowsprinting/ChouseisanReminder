@@ -7,6 +7,7 @@ import (
 	"google.golang.org/appengine"
 	"google.golang.org/appengine/datastore"
 	"google.golang.org/appengine/log"
+	"google.golang.org/appengine/urlfetch"
 )
 
 /**
@@ -14,7 +15,7 @@ import (
  */
 func leave(w http.ResponseWriter, r *http.Request) {
 	c := appengine.NewContext(r)
-	bot, err := createBotClient(c)
+	bot, err := createBotClient(c, urlfetch.Client(c))
 	if err != nil {
 		return
 	}
