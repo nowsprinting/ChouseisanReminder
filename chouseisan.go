@@ -172,7 +172,7 @@ func chouseisanIterator(current *subscriber, c context.Context, client *http.Cli
 	if exist {
 		result = append(result, obj)
 	} else {
-		log.Infof(c, "Not found schedule at today.")
+		log.Debugf(c, "Not found schedule at today.")
 	}
 
 	//3日後の予定をピック
@@ -181,7 +181,7 @@ func chouseisanIterator(current *subscriber, c context.Context, client *http.Cli
 	if exist {
 		result = append(result, obj)
 	} else {
-		log.Infof(c, "Not found schedule at 3 days after.")
+		log.Debugf(c, "Not found schedule at 3 days after.")
 	}
 
 	return result
@@ -211,13 +211,15 @@ func crawlChouseisanWithContext(c context.Context, client *http.Client, w http.R
 		}
 		if cSubscriber.ChouseisanHash != "" {
 			// ハッシュが設定されていれば、調整さんイベントをクロール
+			log.Infof(c, "Crawl chouseisan! subscriber:%v, hash:%v", cSubscriber.DisplayName, cSubscriber.ChouseisanHash)
 			result := chouseisanIterator(&cSubscriber, c, client, w, r)
 
 			// リマインド対象イベントがあれば、Push Messageを送信
 			for _, v := range result {
+				log.Infof(c, "Remind event! date:%v", v.DateString)
 				message := v.constructSummary(cSubscriber.ChouseisanHash)
 				if _, err = bot.PushMessage(cSubscriber.MID, linebot.NewTextMessage(message)).Do(); err != nil {
-					log.Errorf(c, "Error occurred at crawl chouseisan. mid:%v, err: %v", cSubscriber.MID, err)
+					log.Errorf(c, "Error occurred at crawl chouseisan. subscriber:%v, date:%v, err: %v", cSubscriber.DisplayName, v.DateString, err)
 				}
 			}
 		}
