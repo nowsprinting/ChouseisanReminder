@@ -257,17 +257,22 @@ func TestCrawlChouseisan(t *testing.T) {
 	httpmock.RegisterStubRequest(
 		httpmock.NewStubRequest(
 			"GET",
-			"https://chouseisan.com/schedule/List/createCsv",
+			"https://chouseisan.com/schedule/List/createCsv?h=3f7ffd73ba174332ae05bd363eba8e71",
 			httpmock.NewStringResponder(200, readFile(t, "testdata/chouseisan/normally.csv")),
 		),
 	)
-
-	// LINEへのPush Messageリクエストをモックする
 	httpmock.RegisterStubRequest(
 		httpmock.NewStubRequest(
-			"POST",
-			"https://api.line.me/v2/bot/message/push",
-			httpmock.NewStringResponder(200, "{}"),
+			"GET",
+			"https://chouseisan.com/schedule/List/createCsv?h=11111111111111111111111111111111",
+			httpmock.NewStringResponder(200, readFile(t, "testdata/chouseisan/normally.csv")),
+		),
+	)
+	httpmock.RegisterStubRequest(
+		httpmock.NewStubRequest(
+			"GET",
+			"https://chouseisan.com/schedule/List/createCsv?h=22222222222222222222222222222222",
+			httpmock.NewStringResponder(200, readFile(t, "testdata/chouseisan/normally.csv")),
 		),
 	)
 
@@ -328,25 +333,9 @@ func TestCrawlChouseisanZeroSubscriber(t *testing.T) {
 	ctx := appengine.NewContext(req)
 	client := urlfetch.Client(ctx)
 
-	// 調整さんへのリクエストをモックする
+	// 調整さんへのリクエストをモックする（呼ばれることはないが、検証のため）
 	httpmock.ActivateNonDefault(client)
 	defer httpmock.DeactivateAndReset()
-	httpmock.RegisterStubRequest(
-		httpmock.NewStubRequest(
-			"GET",
-			"https://chouseisan.com/schedule/List/createCsv",
-			httpmock.NewStringResponder(200, readFile(t, "testdata/chouseisan/normally.csv")),
-		),
-	)
-
-	// LINEへのPush Messageリクエストをモックする
-	httpmock.RegisterStubRequest(
-		httpmock.NewStubRequest(
-			"POST",
-			"https://api.line.me/v2/bot/message/push",
-			httpmock.NewStringResponder(200, "{}"),
-		),
-	)
 
 	// 購読者エンティティは1件だが、調整さんハッシュは持っていない
 	entity := subscriber{
