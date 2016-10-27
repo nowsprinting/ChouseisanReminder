@@ -17,18 +17,18 @@ import (
  *
  * 引数にContextとhttp.Clientを取るインナーメソッド
  */
-func analyzeCommandWithContext(c context.Context, client *http.Client, w http.ResponseWriter, r *http.Request) {
+func commandAnalyzeWithContext(c context.Context, client *http.Client, w http.ResponseWriter, r *http.Request) {
 	bot, err := createBotClient(c, client)
 	if err != nil {
 		return
 	}
 
-	// 購読者プロファイルを取得（データストアから取得する）
+	token := r.FormValue("replyToken")
 	mid := r.FormValue("mid")
 
 	// Reply message
 	message := "無効なコマンドです。\n有効なコマンドは、こちらのページをご覧ください\nhttps://" + appengine.DefaultVersionHostname(c) + "/"
-	if _, err = bot.ReplyMessage(r.FormValue("replyToken"), linebot.NewTextMessage(message)).Do(); err != nil {
+	if _, err = bot.ReplyMessage(token, linebot.NewTextMessage(message)).Do(); err != nil {
 		log.Errorf(c, "Error occurred at reply-message for command. mid:%v, err: %v", mid, err)
 	}
 }
@@ -36,7 +36,7 @@ func analyzeCommandWithContext(c context.Context, client *http.Client, w http.Re
 /**
  * コマンド解析
  */
-func analyzeCommand(w http.ResponseWriter, r *http.Request) {
+func commandAnalyze(w http.ResponseWriter, r *http.Request) {
 	c := appengine.NewContext(r)
-	analyzeCommandWithContext(c, urlfetch.Client(c), w, r)
+	commandAnalyzeWithContext(c, urlfetch.Client(c), w, r)
 }

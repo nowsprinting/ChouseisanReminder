@@ -38,7 +38,7 @@ func init() {
 	http.HandleFunc("/line/callback", lineCallback)
 	http.HandleFunc("/task/join", join)
 	http.HandleFunc("/task/leave", leave)
-	http.HandleFunc("/task/analyzecommand", analyzeCommand)
+	http.HandleFunc("/task/commandanalyze", commandAnalyze)
 	http.HandleFunc("/", usage)
 }
 
@@ -116,7 +116,7 @@ func lineCallback(w http.ResponseWriter, r *http.Request) {
 			switch message := event.Message.(type) {
 			case *linebot.TextMessage:
 				if message.Text[0:1] == "/" {
-					task := taskqueue.NewPOSTTask("/task/analyzecommand", url.Values{
+					task := taskqueue.NewPOSTTask("/task/commandanalyze", url.Values{
 						"mid":        {getSenderID(c, event)},
 						"replyToken": {event.ReplyToken},
 						"text":       {message.Text[1:]},
