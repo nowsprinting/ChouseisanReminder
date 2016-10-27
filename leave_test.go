@@ -7,7 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/jarcoal/httpmock"
+	"github.com/thingful/httpmock"
+
 	"google.golang.org/appengine"
 	"google.golang.org/appengine/aetest"
 	"google.golang.org/appengine/datastore"
@@ -126,9 +127,12 @@ func TestLeaveUser(t *testing.T) {
 	// LINEへのGet Profileリクエストをモックする
 	httpmock.ActivateNonDefault(client)
 	defer httpmock.DeactivateAndReset()
-	httpmock.RegisterResponder("GET",
-		"https://api.line.me/v2/bot/profile/"+expectedMid,
-		httpmock.NewStringResponder(200, readFile(t, "testdata/linebot/profile.json")),
+	httpmock.RegisterStubRequest(
+		httpmock.NewStubRequest(
+			"GET",
+			"https://api.line.me/v2/bot/profile/"+expectedMid,
+			httpmock.NewStringResponder(200, readFile(t, "testdata/linebot/profile.json")),
+		),
 	)
 
 	// 削除される購読者エンティティを用意しておく
@@ -146,6 +150,11 @@ func TestLeaveUser(t *testing.T) {
 	// リクエストは正常終了していること
 	if res.Code != http.StatusOK {
 		t.Fatalf("Non-expected status code: %v\n\tbody: %v", res.Code, res.Body)
+	}
+
+	// スタブがすべて呼ばれたことを検証
+	if err = httpmock.AllStubsCalled(); err != nil {
+		t.Errorf("Not all stubs were called: %s", err)
 	}
 
 	// データストアの内容を確認（購読者エンティティ）

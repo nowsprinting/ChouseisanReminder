@@ -12,8 +12,8 @@ before_install:
 
 install:
   - goapp get google.golang.org/appengine
-  - goapp get github.com/jarcoal/httpmock
   - goapp get github.com/line/line-bot-sdk-go/linebot
+  - goapp get github.com/thingful/httpmock
   - goapp get golang.org/x/text/encoding/japanese
   - goapp get golang.org/x/text/transform
 

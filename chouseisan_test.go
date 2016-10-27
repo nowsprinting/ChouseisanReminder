@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jarcoal/httpmock"
+	"github.com/thingful/httpmock"
 
 	"google.golang.org/appengine"
 	"google.golang.org/appengine/aetest"
@@ -254,15 +254,21 @@ func TestCrawlChouseisan(t *testing.T) {
 	// 調整さんへのリクエストをモックする
 	httpmock.ActivateNonDefault(client)
 	defer httpmock.DeactivateAndReset()
-	httpmock.RegisterResponder("GET",
-		"https://chouseisan.com/schedule/List/createCsv",
-		httpmock.NewStringResponder(200, readFile(t, "testdata/chouseisan/normally.csv")),
+	httpmock.RegisterStubRequest(
+		httpmock.NewStubRequest(
+			"GET",
+			"https://chouseisan.com/schedule/List/createCsv",
+			httpmock.NewStringResponder(200, readFile(t, "testdata/chouseisan/normally.csv")),
+		),
 	)
 
 	// LINEへのPush Messageリクエストをモックする
-	httpmock.RegisterResponder("POST",
-		"https://api.line.me/v2/bot/message/push",
-		httpmock.NewStringResponder(200, "{}"),
+	httpmock.RegisterStubRequest(
+		httpmock.NewStubRequest(
+			"POST",
+			"https://api.line.me/v2/bot/message/push",
+			httpmock.NewStringResponder(200, "{}"),
+		),
 	)
 
 	// 購読者エンティティを用意しておく
@@ -293,6 +299,11 @@ func TestCrawlChouseisan(t *testing.T) {
 	if res.Code != http.StatusOK {
 		t.Fatalf("Non-expected status code: %v\n\tbody: %v", res.Code, res.Body)
 	}
+
+	// スタブがすべて呼ばれたことを検証
+	if err := httpmock.AllStubsCalled(); err != nil {
+		t.Errorf("Not all stubs were called: %s", err)
+	}
 }
 
 /**
@@ -320,15 +331,21 @@ func TestCrawlChouseisanZeroSubscriber(t *testing.T) {
 	// 調整さんへのリクエストをモックする
 	httpmock.ActivateNonDefault(client)
 	defer httpmock.DeactivateAndReset()
-	httpmock.RegisterResponder("GET",
-		"https://chouseisan.com/schedule/List/createCsv",
-		httpmock.NewStringResponder(200, readFile(t, "testdata/chouseisan/normally.csv")),
+	httpmock.RegisterStubRequest(
+		httpmock.NewStubRequest(
+			"GET",
+			"https://chouseisan.com/schedule/List/createCsv",
+			httpmock.NewStringResponder(200, readFile(t, "testdata/chouseisan/normally.csv")),
+		),
 	)
 
 	// LINEへのPush Messageリクエストをモックする
-	httpmock.RegisterResponder("POST",
-		"https://api.line.me/v2/bot/message/push",
-		httpmock.NewStringResponder(200, "{}"),
+	httpmock.RegisterStubRequest(
+		httpmock.NewStubRequest(
+			"POST",
+			"https://api.line.me/v2/bot/message/push",
+			httpmock.NewStringResponder(200, "{}"),
+		),
 	)
 
 	// 購読者エンティティは1件だが、調整さんハッシュは持っていない
@@ -349,5 +366,10 @@ func TestCrawlChouseisanZeroSubscriber(t *testing.T) {
 	// リクエストは正常終了していること
 	if res.Code != http.StatusOK {
 		t.Fatalf("Non-expected status code: %v\n\tbody: %v", res.Code, res.Body)
+	}
+
+	// スタブがすべて呼ばれたことを検証
+	if err := httpmock.AllStubsCalled(); err != nil {
+		t.Errorf("Not all stubs were called: %s", err)
 	}
 }

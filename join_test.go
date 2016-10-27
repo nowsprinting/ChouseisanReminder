@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/jarcoal/httpmock"
+	"github.com/thingful/httpmock"
 
 	"google.golang.org/appengine"
 	"google.golang.org/appengine/aetest"
@@ -59,9 +59,12 @@ func TestJoinGroup(t *testing.T) {
 	// LINEへのReply Messageリクエストをモックする
 	httpmock.ActivateNonDefault(client)
 	defer httpmock.DeactivateAndReset()
-	httpmock.RegisterResponder("POST",
-		"https://api.line.me/v2/bot/message/reply",
-		httpmock.NewStringResponder(200, "{}"),
+	httpmock.RegisterStubRequest(
+		httpmock.NewStubRequest(
+			"POST",
+			"https://api.line.me/v2/bot/message/reply",
+			httpmock.NewStringResponder(200, "{}"),
+		),
 	)
 
 	// execute
@@ -71,6 +74,11 @@ func TestJoinGroup(t *testing.T) {
 	// リクエストは正常終了していること
 	if res.Code != http.StatusOK {
 		t.Fatalf("Non-expected status code: %v\n\tbody: %v", res.Code, res.Body)
+	}
+
+	// スタブがすべて呼ばれたことを検証
+	if err = httpmock.AllStubsCalled(); err != nil {
+		t.Errorf("Not all stubs were called: %s", err)
 	}
 
 	// データストアの内容を確認（購読者エンティティ）
@@ -144,13 +152,19 @@ func TestJoinUser(t *testing.T) {
 	// LINEへのGet ProfileおよびReply Messageリクエストをモックする
 	httpmock.ActivateNonDefault(client)
 	defer httpmock.DeactivateAndReset()
-	httpmock.RegisterResponder("GET",
-		"https://api.line.me/v2/bot/profile/"+expectedMid,
-		httpmock.NewStringResponder(200, readFile(t, "testdata/linebot/profile.json")),
+	httpmock.RegisterStubRequest(
+		httpmock.NewStubRequest(
+			"GET",
+			"https://api.line.me/v2/bot/profile/"+expectedMid,
+			httpmock.NewStringResponder(200, readFile(t, "testdata/linebot/profile.json")),
+		),
 	)
-	httpmock.RegisterResponder("POST",
-		"https://api.line.me/v2/bot/message/reply",
-		httpmock.NewStringResponder(200, "{}"),
+	httpmock.RegisterStubRequest(
+		httpmock.NewStubRequest(
+			"POST",
+			"https://api.line.me/v2/bot/message/reply",
+			httpmock.NewStringResponder(200, "{}"),
+		),
 	)
 
 	// execute
@@ -160,6 +174,11 @@ func TestJoinUser(t *testing.T) {
 	// リクエストは正常終了していること
 	if res.Code != http.StatusOK {
 		t.Fatalf("Non-expected status code: %v\n\tbody: %v", res.Code, res.Body)
+	}
+
+	// スタブがすべて呼ばれたことを検証
+	if err = httpmock.AllStubsCalled(); err != nil {
+		t.Errorf("Not all stubs were called: %s", err)
 	}
 
 	// データストアの内容を確認（購読者エンティティ）
