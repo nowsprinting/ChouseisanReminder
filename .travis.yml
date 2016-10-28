@@ -1,4 +1,9 @@
+sudo: false
+
 language: go
+
+go:
+  - 1.6
 
 before_install:
   - export FILE=go_appengine_sdk_linux_amd64-1.9.40.zip
@@ -12,13 +17,13 @@ before_install:
 
 install:
   - goapp get google.golang.org/appengine
-  - goapp get github.com/jarcoal/httpmock
   - goapp get github.com/line/line-bot-sdk-go/linebot
+  - goapp get github.com/thingful/httpmock
   - goapp get golang.org/x/text/encoding/japanese
   - goapp get golang.org/x/text/transform
 
 script:
-  - ./runtest.sh
+  - make test
 
 after_success:
   - $GOPATH/bin/goveralls -coverprofile=coverage.out -service=travis-ci -repotoken $COVERALLS_TOKEN

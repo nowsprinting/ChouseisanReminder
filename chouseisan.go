@@ -4,16 +4,18 @@ import (
 	"encoding/csv"
 	"io"
 	"net/http"
-	"os"
 	"regexp"
 	"strconv"
 	"time"
+
+	"github.com/line/line-bot-sdk-go/linebot"
 
 	"golang.org/x/net/context"
 	"golang.org/x/text/encoding/japanese"
 	"golang.org/x/text/transform"
 
 	"google.golang.org/appengine"
+	"google.golang.org/appengine/datastore"
 	"google.golang.org/appengine/log"
 	"google.golang.org/appengine/urlfetch"
 )
@@ -29,8 +31,15 @@ type schedule struct {
 	UnknownName      string    // △および未入力の名前を列挙したもの
 }
 
+// 送信メッセージ用のサマリを組み立てて返す
+func (s *schedule) constructSummary(hash string) string {
+	return s.DateString + "の出欠状況をお知らせします\n参加: " + strconv.Itoa(s.Present) + "名" + s.ParticipantsName +
+		"\n不参加: " + strconv.Itoa(s.Absent) + "名\n不明/未入力: " + strconv.Itoa(s.Unknown) + "名" + s.UnknownName +
+		"\n\n詳細および出欠変更は「調整さん」へ\nhttps://chouseisan.com/s?h=" + hash
+}
+
 // 調整さんスケジュールのMap型
-type scheduleMap map[string]*schedule
+type scheduleMap map[string]schedule
 
 /**
  * 調整さんcsvをパースして、参加人数などを集計する
@@ -67,7 +76,7 @@ func parseCsv(c context.Context, csvBody io.ReadCloser, today time.Time) (m sche
 
 		} else {
 			//データ行（最終のコメント行も含む）
-			s := new(schedule)
+			s := schedule{}
 			for i, v := range row {
 				if i == 0 {
 					//日付カラムはパースしてキーにする
@@ -136,21 +145,20 @@ func parseCsv(c context.Context, csvBody io.ReadCloser, today time.Time) (m sche
 }
 
 /**
- * 調整さんをクロールして出欠を通知（cronからキックされる）
+ * 購読者ごとのイテレーション処理。調整さんをクロールして通知対象があれば集計して返す
  */
-func crawlChouseisan(w http.ResponseWriter, r *http.Request) {
-	c := appengine.NewContext(r)
+func chouseisanIterator(current *subscriber, c context.Context, client *http.Client, w http.ResponseWriter, r *http.Request) []schedule {
+	result := []schedule{}
 
 	//調整さんの"出欠表をダウンロード"リンクからcsv形式で取得
-	url := "https://chouseisan.com/schedule/List/createCsv?h=" + os.Getenv("CHOUSEISAN_EVENT_HASH")
-	client := urlfetch.Client(c)
+	url := "https://chouseisan.com/schedule/List/createCsv?h=" + current.ChouseisanHash
 	res, err := client.Get(url)
 	if err != nil {
 		log.Errorf(c, "Get chouseisan's csv failed. err: %v", err)
-		return
+		return result
 	} else if res.StatusCode != 200 {
 		log.Errorf(c, "Get chouseisan's csv failed. StatusCode: %v", res.StatusCode)
-		return
+		return result
 	}
 
 	//csvをパース
@@ -162,31 +170,67 @@ func crawlChouseisan(w http.ResponseWriter, r *http.Request) {
 	targetDate := time.Date(today.Year(), today.Month(), today.Day(), 0, 0, 0, 0, tz)
 	obj, exist := m[targetDate.String()]
 	if exist {
-		sendSchedule(c, obj)
+		result = append(result, obj)
 	} else {
-		log.Infof(c, "Not found schedule at today.")
+		log.Debugf(c, "Not found schedule at today.")
 	}
 
 	//3日後の予定をピック
 	targetDate = targetDate.AddDate(0, 0, 3)
 	obj, exist = m[targetDate.String()]
 	if exist {
-		sendSchedule(c, obj)
+		result = append(result, obj)
 	} else {
-		log.Infof(c, "Not found schedule at 3 days after.")
+		log.Debugf(c, "Not found schedule at 3 days after.")
+	}
+
+	return result
+}
+
+/**
+ * 調整さんをクロールして出欠を通知
+ *
+ * 引数にContextとhttp.Clientを取るインナーメソッド
+ */
+func crawlChouseisanWithContext(c context.Context, client *http.Client, w http.ResponseWriter, r *http.Request) {
+	bot, err := createBotClient(c, client)
+	if err != nil {
+		return
+	}
+
+	//hashの入ってるエンティティを抽出してループ
+	ite := datastore.NewQuery("Subscriber").Run(c)
+	for {
+		var cSubscriber subscriber
+		_, err = ite.Next(&cSubscriber)
+		if err == datastore.Done {
+			break
+		} else if err != nil {
+			log.Errorf(c, "Error occurred at fetch Subscriber. err:%v", err)
+			break
+		}
+
+		if cSubscriber.ChouseisanHash != "" {
+			// ハッシュが設定されていれば、調整さんイベントをクロール
+			log.Infof(c, "Crawl chouseisan! subscriber:%v hash:%v", cSubscriber.DisplayName, cSubscriber.ChouseisanHash)
+			result := chouseisanIterator(&cSubscriber, c, client, w, r)
+
+			// リマインド対象イベントがあれば、Push Messageを送信
+			for _, v := range result {
+				log.Infof(c, "Remind event! subscriber:%v date:%v", cSubscriber.DisplayName, v.DateString)
+				message := v.constructSummary(cSubscriber.ChouseisanHash)
+				if _, err = bot.PushMessage(cSubscriber.MID, linebot.NewTextMessage(message)).Do(); err != nil {
+					log.Errorf(c, "Error occurred at crawl chouseisan. subscriber:%v, date:%v, err: %v", cSubscriber.DisplayName, v.DateString, err)
+				}
+			}
+		}
 	}
 }
 
 /**
- * 出欠メッセージを組み立ててLINEに送信
+ * 調整さんをクロールして出欠を通知（cronからキックされる）
  */
-func sendSchedule(c context.Context, obj *schedule) {
-	//メッセージを組み立てて送信
-	bot, err := createBotClient(c)
-	if err != nil {
-		return
-	}
-	msg := obj.DateString + "の出欠状況をお知らせします\n参加: " + strconv.Itoa(obj.Present) + "名" + obj.ParticipantsName + "\n不参加: " + strconv.Itoa(obj.Absent) + "名\n不明/未入力: " + strconv.Itoa(obj.Unknown) + "名" + obj.UnknownName + "\n\n詳細および出欠変更は「調整さん」へ\nhttps://chouseisan.com/s?h=" + os.Getenv("CHOUSEISAN_EVENT_HASH")
-	sendToAll(c, bot, msg)
-	return
+func crawlChouseisan(w http.ResponseWriter, r *http.Request) {
+	c := appengine.NewContext(r)
+	crawlChouseisanWithContext(c, urlfetch.Client(c), w, r)
 }

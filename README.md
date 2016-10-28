@@ -1,4 +1,4 @@
-# Chouseisan Reminder
+# Chouseisan Reminder Bot
 [![Build Status](https://travis-ci.org/nowsprinting/ChouseisanReminder.svg?branch=master)](https://travis-ci.org/nowsprinting/ChouseisanReminder)
 [![Coverage Status](https://coveralls.io/repos/github/nowsprinting/ChouseisanReminder/badge.svg)](https://coveralls.io/github/nowsprinting/ChouseisanReminder)
 
@@ -9,29 +9,27 @@
 
 ### LINEからのコールバック受信時
 
-#### 友だち登録イベント
+##### 友だち登録、グループ/ルームへの招待イベント
 
-- 対象のMIDを購読者としてデータストアに追加
-- 購読者全員に「購読を開始しました」メッセージを送信
+- 対象のIDを購読者としてデータストアに追加
+- 送信者（ユーザ/グループ/ルーム）に「リマインダを登録しました」メッセージを送信
 
-#### ブロック（友だち登録解除）イベント
+##### ブロック（友だち登録解除）、グループからの削除イベント
 
-- 対象のMIDを購読者から削除
-- 購読者全員に「購読を解除しました」メッセージを送信
+- 対象のIDを購読者から削除
+- メッセージは送信しない（受け取る相手がいないため）
+- トークルームからのleaveイベントもグループと同様の処理をするが、実際にはこのイベントは送信されない
 
-#### トーク受信
+##### トーク受信
 
-- 購読者全員に同様のテキストを送信する。このとき送信者のスクリーンネームも添える
-- その他、直近の参加予定を返すなどのコマンド。追々検討
-
-#### スタンプ受信
-
-- 購読者全員に同様のスタンプを送信する。このとき送信者のスクリーンネームも添える
+- `/set chouseisan`コマンドで、リマインド対象の調整さんイベントを設定できる
+- グループ利用を想定しているため、テキストメッセージのオウム返しはしない
 
 ### 定時実行
 
-- 毎日8:00に定時実行
-- 3日後、および、当日に調整さんの予定があれば、購読者全員に出欠入力状況を送信
+- 毎日8:00に定時実行し、購読者ごとの調整さんイベント日程をクロール
+- 3日後もしくは当日の予定があれば、その購読者に出欠入力状況を送信
+	- ここで`Push Message`APIを使用するため、BOTアカウントの契約プランはDeveloper Trialかプロ以上が必要。
 
 ### Webブラウザからのアクセス時
 
@@ -52,7 +50,7 @@
 
 `app.yaml`にはLINE BOTのキー情報などを含むため、リポジトリから除外している。下記の書式で`app.yaml`を作成すること
 
-	application: YOUR_APPLICATION_ID
+	application: YOUR-APPLICATION-ID
 	version: 2
 	runtime: go
 	api_version: go1
@@ -70,22 +68,29 @@
 	  script: _go_app
 
 	env_variables:
-	  CHOUSEISAN_EVENT_HASH: 'YOUR_EVENT_HASH'
 	  LINE_CHANNEL_SECRET: 'YOUR_CHANNEL_SECRET'
-      LINE_CHANNEL_ACCESS_TOKEN: `YOUR_ACCESS_TOKEN`
+	  LINE_CHANNEL_ACCESS_TOKEN: 'YOUR_ACCESS_TOKEN'
 
 ### LINE BOTのQRコード
 
 LINE BOTのQRコードを`/img/linebot_qr.png`に置くこと（usage.htmlからリンクしている）
 
+### version.go
+
+バージョン番号は、`make test`、`make deploy`の際に生成されるversion.goファイルに定義される。
+
+直接`goapp deploy`コマンドでApp Engineにデプロイすると、定数`version`が未定義なためエラーとなる。`make deploy`コマンドを使うこと。
+
 
 ## LINE BOTについて
 
-- トライアルで提供されていた BOT API Trialはdeprecatedされたため、新しいMessaging APIを利用するよう書き換えた。
-    - see: https://developers.line.me/messaging-api/overview
-- 開設したチャンネルの"Basic Information"にある"Callback URL"に、コールバックを受け取るURLを設定する必要がある。以下のように設定する。
-	- https:// YOUR-PROJECT-ID .appspot.com:443/line/callback
-- 新しいMessaging APIではBOTをグループに追加できるが、本BOTは従来のBOT APIベースのため、リマインダを受けたいユーザは個々にBOTを友だち登録して利用する形式を取る。
+- トライアルで提供されていた BOT API Trialはdeprecatedされたため、新しいMessaging APIを利用するよう書き換えた
+    - see: [LINE Developers - Messaging API - Overview](https://developers.line.me/messaging-api/overview)
+- 開設したチャンネルの"Basic Information"にある"Callback URL"に、コールバックを受け取るURLを設定する必要がある。記述例:
+	- `https:// YOUR-APPLICATION-ID .appspot.com:443/line/callback`
+- その他、LINE BOTまわりは下記ブログエントリを参照
+	- [調整さんリマインダLINE BOTを作ってみた - やらなイカ？](http://nowsprinting.hatenablog.com/entry/2016/08/23/000000)
+	- [LINEの新しいMessaging APIを試してみた - やらなイカ？](http://nowsprinting.hatenablog.com/entry/2016/10/02/043410)
 
 
 ## 調整さんについて
