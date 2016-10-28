@@ -206,17 +206,18 @@ func crawlChouseisanWithContext(c context.Context, client *http.Client, w http.R
 		if err == datastore.Done {
 			break
 		} else if err != nil {
-			log.Errorf(c, "Error occurred at fetch subscriber. err:%v", err)
+			log.Errorf(c, "Error occurred at fetch Subscriber. err:%v", err)
 			break
 		}
+
 		if cSubscriber.ChouseisanHash != "" {
 			// ハッシュが設定されていれば、調整さんイベントをクロール
-			log.Infof(c, "Crawl chouseisan! subscriber:%v, hash:%v", cSubscriber.DisplayName, cSubscriber.ChouseisanHash)
+			log.Infof(c, "Crawl chouseisan! subscriber:%v hash:%v", cSubscriber.DisplayName, cSubscriber.ChouseisanHash)
 			result := chouseisanIterator(&cSubscriber, c, client, w, r)
 
 			// リマインド対象イベントがあれば、Push Messageを送信
 			for _, v := range result {
-				log.Infof(c, "Remind event! date:%v", v.DateString)
+				log.Infof(c, "Remind event! subscriber:%v date:%v", cSubscriber.DisplayName, v.DateString)
 				message := v.constructSummary(cSubscriber.ChouseisanHash)
 				if _, err = bot.PushMessage(cSubscriber.MID, linebot.NewTextMessage(message)).Do(); err != nil {
 					log.Errorf(c, "Error occurred at crawl chouseisan. subscriber:%v, date:%v, err: %v", cSubscriber.DisplayName, v.DateString, err)
