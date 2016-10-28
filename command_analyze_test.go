@@ -182,6 +182,96 @@ func TestCommandAnalyzeSetChouseisanNormally(t *testing.T) {
 }
 
 /**
+ * グループ名設定コマンド（正常系）
+ */
+func TestCommandAnalyzeSetNameNormally(t *testing.T) {
+	opt := aetest.Options{StronglyConsistentDatastore: true} //データストアに即反映
+	instance, err := aetest.NewInstance(&opt)
+	if err != nil {
+		t.Fatalf("Failed to create aetest instance: %v", err)
+	}
+	defer instance.Close()
+
+	// 評価する値
+	expectedMid := "C00000000000000000000000000000000" //グループなので先頭は"C"
+	expectedName := "テストグループ"
+
+	// http.Requestを生成
+	param := url.Values{
+		"mid":        {expectedMid},
+		"replyToken": {"nHuyWiB7yP5Zw52FIkcQobQuGDXCTA"},
+		"text":       {"set name " + expectedName},
+	}
+	req, err := instance.NewRequest("POST", "/task/analyzecommand", strings.NewReader(param.Encode()))
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded") //必須
+
+	// Contextとhttp.Clientは、テストコード側でインスタンス化する（モックと共通のインスタンスを使う必要があるため）
+	ctx := appengine.NewContext(req)
+	client := urlfetch.Client(ctx)
+
+	// コマンド送信グループとMIDが一致する購読者エンティティを用意しておく
+	entity := subscriber{
+		MID:         expectedMid,
+		DisplayName: "変更前の名前",
+	}
+	key := datastore.NewKey(ctx, "Subscriber", expectedMid, 0, nil)
+	if _, err = datastore.Put(ctx, key, &entity); err != nil {
+		t.Fatal(err)
+	}
+
+	// LINEへのReply Messageリクエストをモックする
+	httpmock.ActivateNonDefault(client)
+	defer httpmock.DeactivateAndReset()
+
+	actualSendMessages := []string{} //モックに送られたリプライメッセージを保持し、後で検証する
+	httpmock.RegisterStubRequest(
+		httpmock.NewStubRequest(
+			"POST",
+			"https://api.line.me/v2/bot/message/reply",
+			func(req *http.Request) (*http.Response, error) {
+				defer req.Body.Close()
+				if body, err := ioutil.ReadAll(req.Body); err == nil {
+					actualSendMessages = append(actualSendMessages, string(body))
+					return httpmock.NewStringResponse(200, "{}"), nil
+				}
+				return httpmock.NewStringResponse(500, "Unread post body"), nil
+			},
+		),
+	)
+
+	// execute
+	res := httptest.NewRecorder()
+	commandAnalyzeWithContext(ctx, client, res, req) //モックと同じhttp.Clientインスタンスを渡す
+
+	// リクエストは正常終了していること
+	if res.Code != http.StatusOK {
+		t.Errorf("Non-expected status code: %v\n\tbody: %v", res.Code, res.Body)
+	}
+
+	// スタブがすべて呼ばれたことを検証
+	if err = httpmock.AllStubsCalled(); err != nil {
+		t.Errorf("Not all stubs were called: %s", err)
+	}
+
+	//送信メッセージの検証
+	if !regexp.MustCompile("グループ（もしくはトークルーム）の名前を設定しました").MatchString(actualSendMessages[0]) {
+		t.Errorf("Unmatch send message text: %v", actualSendMessages[0])
+	}
+
+	// データストアにDisplayNameが書き込まれていること
+	var actualEntity subscriber
+	if err = datastore.Get(ctx, key, &actualEntity); err != nil {
+		t.Fatal(err)
+	}
+	if actualEntity.DisplayName != expectedName {
+		t.Errorf("Unmatch entitiy's name. name='%v'", actualEntity.DisplayName)
+	}
+}
+
+/**
  * バージョン表示コマンド（正常系）
  */
 func TestCommandAnalyzeVersionNormally(t *testing.T) {

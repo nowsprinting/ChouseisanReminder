@@ -47,6 +47,18 @@ func commandAnalyzeWithContext(c context.Context, client *http.Client, w http.Re
 		return
 	}
 
+	// `set name` command
+	if b, name := isSetNameCommand(c, text); b {
+		if err := writeName(c, mid, name); err != nil {
+			message := "グループ（もしくはトークルーム）の名前の設定に失敗しました\n" + err.Error()
+			replyMessage(c, client, token, message)
+		} else {
+			message := "グループ（もしくはトークルーム）の名前を設定しました"
+			replyMessage(c, client, token, message)
+		}
+		return
+	}
+
 	// `version` command
 	if isVersionCommand(c, text) {
 		message := version
