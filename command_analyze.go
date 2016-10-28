@@ -13,24 +13,44 @@ import (
 )
 
 /**
- * コマンド解析
- *
- * 引数にContextとhttp.Clientを取るインナーメソッド
+ * コマンド実行結果をリプライ
  */
-func commandAnalyzeWithContext(c context.Context, client *http.Client, w http.ResponseWriter, r *http.Request) {
+func replyMessage(c context.Context, client *http.Client, token string, message string) {
 	bot, err := createBotClient(c, client)
 	if err != nil {
 		return
 	}
 
-	token := r.FormValue("replyToken")
-	mid := r.FormValue("mid")
-
-	// Reply message
-	message := "無効なコマンドです。\n有効なコマンドは、こちらのページをご覧ください\nhttps://" + appengine.DefaultVersionHostname(c) + "/"
 	if _, err = bot.ReplyMessage(token, linebot.NewTextMessage(message)).Do(); err != nil {
-		log.Errorf(c, "Error occurred at reply-message for command. mid:%v, err: %v", mid, err)
+		log.Errorf(c, "Error occurred at reply-message for command. err: %v", err)
 	}
+}
+
+/**
+ * コマンド解析
+ *
+ * 引数にContextとhttp.Clientを取るインナーメソッド
+ */
+func commandAnalyzeWithContext(c context.Context, client *http.Client, w http.ResponseWriter, r *http.Request) {
+	mid := r.FormValue("mid")
+	token := r.FormValue("replyToken")
+	text := r.FormValue("text")
+
+	// `set chouseisan` command
+	if b, hash := isSetChouseisanCommand(c, text); b {
+		if err := writeChouseisanHash(c, mid, hash); err != nil {
+			message := "リマインドする調整さんイベントを設定しました"
+			replyMessage(c, client, token, message)
+		} else {
+			message := "調整さんイベントの設定に失敗しました\n" + err.Error()
+			replyMessage(c, client, token, message)
+		}
+		return
+	}
+
+	// Reply "invalid command" message
+	message := "無効なコマンドです。\n有効なコマンドは、こちらのページをご覧ください\nhttps://" + appengine.DefaultVersionHostname(c) + "/"
+	replyMessage(c, client, token, message)
 }
 
 /**
