@@ -1,4 +1,9 @@
+sudo: false
+
 language: go
+
+go:
+  - 1.6
 
 before_install:
   - export FILE=go_appengine_sdk_linux_amd64-1.9.40.zip
