@@ -13,7 +13,7 @@ import (
  * `set chouseisan`コマンドであれば、調整さんハッシュを返す
  */
 func isSetChouseisanCommand(c context.Context, command string) (bool, string) {
-	pattern := regexp.MustCompile(`set chouseisan https:\/\/chouseisan\.com\/s\?h=(\w+)`)
+	pattern := regexp.MustCompile(`^[ \n]*set chouseisan https:\/\/chouseisan\.com\/s\?h=(\w+)[ \n]*$`)
 	matches := pattern.FindStringSubmatch(command)
 	if len(matches) == 2 {
 		return true, matches[1]

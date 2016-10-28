@@ -9,7 +9,7 @@ import (
 )
 
 /**
-* `set chouseisan`コマンド判定とハッシュの取り出し（正常系）
+ * `set chouseisan`コマンド判定とハッシュの取り出し（正常系）
  */
 func TestIsSetChouseisanCommandNormally(t *testing.T) {
 	c, done, err := aetest.NewContext()
@@ -29,7 +29,29 @@ func TestIsSetChouseisanCommandNormally(t *testing.T) {
 }
 
 /**
-* `set chouseisan`コマンド判定とハッシュの取り出し（コマンド不一致）
+ * `set chouseisan`コマンド判定とハッシュの取り出し（正常系・ノイズ付き）
+ *
+ * コマンド文字列の前後に、スペースや改行のノイズを入れる
+ */
+func TestIsSetChouseisanCommandWithNoise(t *testing.T) {
+	c, done, err := aetest.NewContext()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer done()
+
+	expectedHash := "3f7ffd73ba174332ae05bd363eba8e71"
+	text := " set chouseisan https://chouseisan.com/s?h=" + expectedHash + "\n"
+
+	if b, hash := isSetChouseisanCommand(c, text); b == false {
+		t.Errorf("isSetChouseisanCommand() returnd false.")
+	} else if hash != expectedHash {
+		t.Errorf("Unmatch chouseisan hash. hash:%v", hash)
+	}
+}
+
+/**
+ * `set chouseisan`コマンド判定とハッシュの取り出し（コマンド不一致）
  */
 func TestIsSetChouseisanCommandUnmatch(t *testing.T) {
 	c, done, err := aetest.NewContext()
