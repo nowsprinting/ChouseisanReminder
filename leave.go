@@ -18,17 +18,17 @@ import (
  * 引数にContextとhttp.Clientを取るインナーメソッド
  */
 func leaveWithContext(c context.Context, client *http.Client, w http.ResponseWriter, r *http.Request) {
-	bot, err := createBotClient(c, client)
-	if err != nil {
+	var entity subscriber
+	mid := r.FormValue("mid")
+
+	//購読者エンティティを抽出
+	key := datastore.NewKey(c, "Subscriber", mid, 0, nil)
+	if err := datastore.Get(c, key, &entity); err != nil {
+		log.Errorf(c, "Error occurred at get Subscriber entity. mid:%v err: %v", mid, err)
 		return
 	}
 
-	//購読者プロファイルを取得
-	mid := r.FormValue("mid")
-	senderName := getSenderName(c, bot, mid)
-
 	//購読者を削除
-	key := datastore.NewKey(c, "Subscriber", mid, 0, nil)
 	if err := datastore.Delete(c, key); err != nil {
 		log.Errorf(c, "Error occurred at delete subcriber to datastore. mid:%v, err: %v", mid, err)
 		return
@@ -36,7 +36,7 @@ func leaveWithContext(c context.Context, client *http.Client, w http.ResponseWri
 
 	//ログエントリを追加
 	logEntity := logSubscriber{
-		DisplayName: senderName,
+		DisplayName: entity.DisplayName,
 		MID:         mid,
 		EventType:   r.FormValue("type"),
 		AddTime:     time.Now(),

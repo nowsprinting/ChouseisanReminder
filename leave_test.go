@@ -28,7 +28,7 @@ func TestLeaveGroup(t *testing.T) {
 
 	// 評価する値
 	expectedMid := "C00000000000000000000000000000000" //グループなので先頭は"C"
-	expectedName := expectedMid                        //グループなので同じ値
+	expectedName := "テストグループ"
 	expectedType := "leave"
 
 	// http.Requestを生成
@@ -47,7 +47,10 @@ func TestLeaveGroup(t *testing.T) {
 	client := urlfetch.Client(ctx)
 
 	// 削除される購読者エンティティを用意しておく
-	entity := subscriber{}
+	entity := subscriber{
+		MID:         expectedMid,
+		DisplayName: expectedName,
+	}
 	key := datastore.NewKey(ctx, "Subscriber", expectedMid, 0, nil)
 	if _, err = datastore.Put(ctx, key, &entity); err != nil {
 		t.Fatal(err)
@@ -105,7 +108,7 @@ func TestLeaveUser(t *testing.T) {
 
 	// 評価する値
 	expectedMid := "U00000000000000000000000000000000" //ユーザなので先頭は"U"
-	expectedName := "LINE taro"                        //ユーザなので、Get Profile APIで取得に行く
+	expectedName := "LINE taro"
 	expectedType := "unfollow"
 
 	// http.Requestを生成
@@ -123,19 +126,15 @@ func TestLeaveUser(t *testing.T) {
 	ctx := appengine.NewContext(req)
 	client := urlfetch.Client(ctx)
 
-	// LINEへのGet Profileリクエストをモックする
+	// 外部アクセスはないはずだが、抑止のためにhttpmockを有効化
 	httpmock.ActivateNonDefault(client)
 	defer httpmock.DeactivateAndReset()
-	httpmock.RegisterStubRequest(
-		httpmock.NewStubRequest(
-			"GET",
-			"https://api.line.me/v2/bot/profile/"+expectedMid,
-			httpmock.NewStringResponder(200, readFile(t, "testdata/linebot/profile.json")),
-		),
-	)
 
 	// 削除される購読者エンティティを用意しておく
-	entity := subscriber{}
+	entity := subscriber{
+		MID:         expectedMid,
+		DisplayName: expectedName,
+	}
 	key := datastore.NewKey(ctx, "Subscriber", expectedMid, 0, nil)
 	if _, err = datastore.Put(ctx, key, &entity); err != nil {
 		t.Fatal(err)
