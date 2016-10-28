@@ -172,7 +172,7 @@ func TestCommandAnalyzeSetChouseisanNormally(t *testing.T) {
 	}
 
 	// データストアにハッシュが書き込まれていること
-	actualEntity := subscriber{}
+	var actualEntity subscriber
 	if err = datastore.Get(ctx, key, &actualEntity); err != nil {
 		t.Fatal(err)
 	}

@@ -81,7 +81,7 @@ func TestWriteChouseisanHashNormally(t *testing.T) {
 	}
 
 	// データストアにハッシュが書き込まれていること
-	actualEntity := subscriber{}
+	var actualEntity subscriber
 	if err = datastore.Get(c, key, &actualEntity); err != nil {
 		t.Fatal(err)
 	}
