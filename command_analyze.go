@@ -20,7 +20,6 @@ func replyMessage(c context.Context, client *http.Client, token string, message 
 	if err != nil {
 		return
 	}
-
 	if _, err = bot.ReplyMessage(token, linebot.NewTextMessage(message)).Do(); err != nil {
 		log.Errorf(c, "Error occurred at reply-message for command. err: %v", err)
 	}
@@ -39,10 +38,10 @@ func commandAnalyzeWithContext(c context.Context, client *http.Client, w http.Re
 	// `set chouseisan` command
 	if b, hash := isSetChouseisanCommand(c, text); b {
 		if err := writeChouseisanHash(c, mid, hash); err != nil {
-			message := "リマインドする調整さんイベントを設定しました"
+			message := "調整さんイベントの設定に失敗しました\n" + err.Error()
 			replyMessage(c, client, token, message)
 		} else {
-			message := "調整さんイベントの設定に失敗しました\n" + err.Error()
+			message := "リマインドする調整さんイベントを設定しました"
 			replyMessage(c, client, token, message)
 		}
 		return

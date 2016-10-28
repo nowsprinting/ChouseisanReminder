@@ -4,6 +4,7 @@ import (
 	"regexp"
 
 	"google.golang.org/appengine/datastore"
+	"google.golang.org/appengine/log"
 
 	"golang.org/x/net/context"
 )
@@ -24,14 +25,17 @@ func isSetChouseisanCommand(c context.Context, command string) (bool, string) {
  * 購読者エンティティに、調整さんハッシュを書き込む
  */
 func writeChouseisanHash(c context.Context, mid string, hash string) error {
-	entity := subscriber{}
+	var entity subscriber
+
 	key := datastore.NewKey(c, "Subscriber", mid, 0, nil)
 	if err := datastore.Get(c, key, &entity); err != nil {
+		log.Errorf(c, "Error occurred at get Subscriber entity. mid=%v err: %v", mid, err)
 		return err
 	}
 
 	entity.ChouseisanHash = hash
 	if _, err := datastore.Put(c, key, &entity); err != nil {
+		log.Errorf(c, "Error occurred at put Subscriber entity. mid=%v err: %v", mid, err)
 		return err
 	}
 	return nil
