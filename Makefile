@@ -5,5 +5,12 @@ ifdef RUN
 	RUNFUNC := -run $(RUN)
 endif
 
-test:
-	goapp test -v -covermode=count -coverprofile=coverage.out $(RUNFUNC)
+version:
+	echo package main > version.go
+	echo const version = \"$(shell git describe)\" >> version.go
+
+test: version
+		goapp test -v -covermode=count -coverprofile=coverage.out $(RUNFUNC)
+
+deploy: version
+	goapp deploy

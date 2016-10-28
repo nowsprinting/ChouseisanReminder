@@ -137,5 +137,9 @@ func lineCallback(w http.ResponseWriter, r *http.Request) {
  */
 func usage(w http.ResponseWriter, r *http.Request) {
 	response := template.Must(template.ParseFiles("templates/usage.html"))
-	response.Execute(w, nil)
+	response.Execute(w, struct {
+		Version string //バージョン番号
+	}{
+		Version: version, // `make version`で生成されるversion.goに定義
+	})
 }

@@ -29,5 +29,8 @@ coverage.out
 # App Engine application's setting file
 app.yaml
 
+# version file (create in Makefile)
+version.go
+
 # LINE BOT QR Code file
 img/linebot_qr.png

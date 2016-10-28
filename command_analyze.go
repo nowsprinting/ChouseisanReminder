@@ -47,6 +47,13 @@ func commandAnalyzeWithContext(c context.Context, client *http.Client, w http.Re
 		return
 	}
 
+	// `version` command
+	if isVersionCommand(c, text) {
+		message := version
+		replyMessage(c, client, token, message)
+		return
+	}
+
 	// Reply "invalid command" message
 	message := "無効なコマンドです。\n有効なコマンドは、こちらのページをご覧ください\nhttps://" + appengine.DefaultVersionHostname(c) + "/"
 	replyMessage(c, client, token, message)

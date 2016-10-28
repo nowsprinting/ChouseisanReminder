@@ -75,6 +75,12 @@
 
 LINE BOTのQRコードを`/img/linebot_qr.png`に置くこと（usage.htmlからリンクしている）
 
+### version.go
+
+バージョン番号は、`make test`、`make deploy`の際に生成されるversion.goファイルに定義される。
+
+直接`goapp deploy`コマンドでApp Engineにデプロイすると、定数`version`が未定義なためエラーとなる。`make deploy`コマンドを使うこと。
+
 
 ## LINE BOTについて
 
