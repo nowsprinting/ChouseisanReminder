@@ -73,7 +73,7 @@ func TestJoinGroup(t *testing.T) {
 
 	// リクエストは正常終了していること
 	if res.Code != http.StatusOK {
-		t.Fatalf("Non-expected status code: %v\n\tbody: %v", res.Code, res.Body)
+		t.Errorf("Non-expected status code: %v\n\tbody: %v", res.Code, res.Body)
 	}
 
 	// スタブがすべて呼ばれたことを検証
@@ -91,10 +91,10 @@ func TestJoinGroup(t *testing.T) {
 		t.Fatal("Subscriber entity was not put")
 	}
 	if subscribers[0].MID != expectedMid {
-		t.Fatalf("Invalid posted subscriber entity. MID='%v'", subscribers[0].MID)
+		t.Errorf("Invalid posted subscriber entity. MID='%v'", subscribers[0].MID)
 	}
 	if subscribers[0].DisplayName != expectedName {
-		t.Fatalf("Invalid posted subscriber entity. DisplayName='%v'", subscribers[0].DisplayName)
+		t.Errorf("Invalid posted subscriber entity. DisplayName='%v'", subscribers[0].DisplayName)
 	}
 
 	// データストアの内容を確認（ログエンティティ）
@@ -107,13 +107,13 @@ func TestJoinGroup(t *testing.T) {
 		t.Fatal("LogSubscriber entity was not put")
 	}
 	if logSubscribers[0].MID != expectedMid {
-		t.Fatalf("Invalid posted LogSubscriber entity. MID='%v'", logSubscribers[0].MID)
+		t.Errorf("Invalid posted LogSubscriber entity. MID='%v'", logSubscribers[0].MID)
 	}
 	if logSubscribers[0].DisplayName != expectedName {
-		t.Fatalf("Invalid posted LogSubscriber entity. DisplayName='%v'", logSubscribers[0].DisplayName)
+		t.Errorf("Invalid posted LogSubscriber entity. DisplayName='%v'", logSubscribers[0].DisplayName)
 	}
 	if logSubscribers[0].EventType != expectedType {
-		t.Fatalf("Invalid posted LogSubscriber entity. EventType='%v'", logSubscribers[0].EventType)
+		t.Errorf("Invalid posted LogSubscriber entity. EventType='%v'", logSubscribers[0].EventType)
 	}
 }
 
@@ -173,7 +173,7 @@ func TestJoinUser(t *testing.T) {
 
 	// リクエストは正常終了していること
 	if res.Code != http.StatusOK {
-		t.Fatalf("Non-expected status code: %v\n\tbody: %v", res.Code, res.Body)
+		t.Errorf("Non-expected status code: %v\n\tbody: %v", res.Code, res.Body)
 	}
 
 	// スタブがすべて呼ばれたことを検証
@@ -191,10 +191,10 @@ func TestJoinUser(t *testing.T) {
 		t.Fatal("Subscriber entity was not put")
 	}
 	if subscribers[0].MID != expectedMid {
-		t.Fatalf("Invalid posted subscriber entity. MID='%v'", subscribers[0].MID)
+		t.Errorf("Invalid posted subscriber entity. MID='%v'", subscribers[0].MID)
 	}
 	if subscribers[0].DisplayName != expectedName {
-		t.Fatalf("Invalid posted subscriber entity. DisplayName='%v'", subscribers[0].DisplayName)
+		t.Errorf("Invalid posted subscriber entity. DisplayName='%v'", subscribers[0].DisplayName)
 	}
 
 	// データストアの内容を確認（ログエンティティ）
@@ -207,12 +207,12 @@ func TestJoinUser(t *testing.T) {
 		t.Fatal("LogSubscriber entity was not put")
 	}
 	if logSubscribers[0].MID != expectedMid {
-		t.Fatalf("Invalid posted LogSubscriber entity. MID='%v'", logSubscribers[0].MID)
+		t.Errorf("Invalid posted LogSubscriber entity. MID='%v'", logSubscribers[0].MID)
 	}
 	if logSubscribers[0].DisplayName != expectedName {
-		t.Fatalf("Invalid posted LogSubscriber entity. DisplayName='%v'", logSubscribers[0].DisplayName)
+		t.Errorf("Invalid posted LogSubscriber entity. DisplayName='%v'", logSubscribers[0].DisplayName)
 	}
 	if logSubscribers[0].EventType != expectedType {
-		t.Fatalf("Invalid posted LogSubscriber entity. EventType='%v'", logSubscribers[0].EventType)
+		t.Errorf("Invalid posted LogSubscriber entity. EventType='%v'", logSubscribers[0].EventType)
 	}
 }

@@ -46,8 +46,7 @@ func TestParseCsvNormally(t *testing.T) {
 	objDay = time.Date(2016, time.December, 24, 0, 0, 0, 0, tz)
 	obj, exist = m[objDay.String()]
 	if !exist {
-		t.Errorf("Entry not found. date is %v", objDay)
-		return
+		t.Fatalf("Entry not found. date is %v", objDay)
 	}
 	if obj.Present != 4 {
 		t.Errorf("Bad obj.Present: %v", obj.Present)
@@ -97,8 +96,7 @@ func TestParseCsvNormallyNextYear(t *testing.T) {
 	objDay = time.Date(2017, time.November, 26, 0, 0, 0, 0, tz)
 	obj, exist = m[objDay.String()]
 	if !exist {
-		t.Errorf("Entry not found. date is %v", objDay)
-		return
+		t.Fatalf("Entry not found. date is %v", objDay)
 	}
 	if obj.Present != 5 {
 		t.Errorf("Bad obj.Present: %v", obj.Present)
@@ -148,8 +146,7 @@ func TestParseCsvNormallyNoCol(t *testing.T) {
 	objDay = time.Date(2016, time.December, 17, 0, 0, 0, 0, tz)
 	obj, exist = m[objDay.String()]
 	if !exist {
-		t.Errorf("Entry not found. date is %v", objDay)
-		return
+		t.Fatalf("Entry not found. date is %v", objDay)
 	}
 	if obj.Present != 0 {
 		t.Errorf("Bad obj.Present: %v", obj.Present)
@@ -200,7 +197,6 @@ func TestParseCsvNormallyNoRow(t *testing.T) {
 	obj, exist = m[objDay.String()]
 	if exist {
 		t.Errorf("Entry found??? date is %v, find date is %v", objDay, obj.DateString)
-		return
 	}
 }
 
@@ -208,9 +204,6 @@ func TestParseCsvNormallyNoRow(t *testing.T) {
  * 日程カラムのフォーマット不正データ
  */
 func TestParseCsvInvalidDateFormat(t *testing.T) {
-	var (
-		err error
-	)
 	c, done, err := aetest.NewContext()
 	if err != nil {
 		t.Fatal(err)
@@ -226,7 +219,12 @@ func TestParseCsvInvalidDateFormat(t *testing.T) {
 
 	tz, _ := time.LoadLocation("Asia/Tokyo")
 	today := time.Date(2016, time.December, 1, 0, 0, 0, 0, tz)
-	parseCsv(c, testdata, today) //パースできていればok
+	m := parseCsv(c, testdata, today)
+
+	//パース結果は4件であること（不正フォーマットはスキップされ、日付の0日や32日はそれなりに解釈されていること）
+	if len(m) != 4 {
+		t.Errorf("Invalid parse result.\n%v", m)
+	}
 }
 
 /**
@@ -292,7 +290,6 @@ func TestCrawlChouseisan(t *testing.T) {
 		key := datastore.NewKey(ctx, "Subscriber", current.MID, 0, nil)
 		if _, err = datastore.Put(ctx, key, &current); err != nil {
 			t.Fatal(err)
-			return
 		}
 	}
 
@@ -302,7 +299,7 @@ func TestCrawlChouseisan(t *testing.T) {
 
 	// リクエストは正常終了していること
 	if res.Code != http.StatusOK {
-		t.Fatalf("Non-expected status code: %v\n\tbody: %v", res.Code, res.Body)
+		t.Errorf("Non-expected status code: %v\n\tbody: %v", res.Code, res.Body)
 	}
 
 	// スタブがすべて呼ばれたことを検証
@@ -345,7 +342,6 @@ func TestCrawlChouseisanZeroSubscriber(t *testing.T) {
 	key := datastore.NewKey(ctx, "Subscriber", "C00000000000000000000000000000000", 0, nil)
 	if _, err = datastore.Put(ctx, key, &entity); err != nil {
 		t.Fatal(err)
-		return
 	}
 
 	// execute
@@ -354,7 +350,7 @@ func TestCrawlChouseisanZeroSubscriber(t *testing.T) {
 
 	// リクエストは正常終了していること
 	if res.Code != http.StatusOK {
-		t.Fatalf("Non-expected status code: %v\n\tbody: %v", res.Code, res.Body)
+		t.Errorf("Non-expected status code: %v\n\tbody: %v", res.Code, res.Body)
 	}
 
 	// スタブがすべて呼ばれたことを検証

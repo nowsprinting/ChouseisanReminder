@@ -52,7 +52,6 @@ func TestCommandAnalyzeEmpty(t *testing.T) {
 	key := datastore.NewKey(ctx, "Subscriber", expectedMid, 0, nil)
 	if _, err = datastore.Put(ctx, key, &entity); err != nil {
 		t.Fatal(err)
-		return
 	}
 
 	// LINEへのReply Messageリクエストをモックする
@@ -81,7 +80,7 @@ func TestCommandAnalyzeEmpty(t *testing.T) {
 
 	// リクエストは正常終了していること
 	if res.Code != http.StatusOK {
-		t.Fatalf("Non-expected status code: %v\n\tbody: %v", res.Code, res.Body)
+		t.Errorf("Non-expected status code: %v\n\tbody: %v", res.Code, res.Body)
 	}
 
 	// スタブがすべて呼ばれたことを検証
@@ -131,7 +130,6 @@ func TestCommandAnalyzeSetChouseisanNormally(t *testing.T) {
 	key := datastore.NewKey(ctx, "Subscriber", expectedMid, 0, nil)
 	if _, err = datastore.Put(ctx, key, &entity); err != nil {
 		t.Fatal(err)
-		return
 	}
 
 	// LINEへのReply Messageリクエストをモックする
@@ -160,7 +158,7 @@ func TestCommandAnalyzeSetChouseisanNormally(t *testing.T) {
 
 	// リクエストは正常終了していること
 	if res.Code != http.StatusOK {
-		t.Fatalf("Non-expected status code: %v\n\tbody: %v", res.Code, res.Body)
+		t.Errorf("Non-expected status code: %v\n\tbody: %v", res.Code, res.Body)
 	}
 
 	// スタブがすべて呼ばれたことを検証
@@ -177,9 +175,8 @@ func TestCommandAnalyzeSetChouseisanNormally(t *testing.T) {
 	actualEntity := subscriber{}
 	if err = datastore.Get(ctx, key, &actualEntity); err != nil {
 		t.Fatal(err)
-		return
 	}
 	if actualEntity.ChouseisanHash != expectedHash {
-		t.Fatalf("Unmatch entitiy's hash. hash='%v'", actualEntity.ChouseisanHash)
+		t.Errorf("Unmatch entitiy's hash. hash='%v'", actualEntity.ChouseisanHash)
 	}
 }

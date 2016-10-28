@@ -51,7 +51,6 @@ func TestLeaveGroup(t *testing.T) {
 	key := datastore.NewKey(ctx, "Subscriber", expectedMid, 0, nil)
 	if _, err = datastore.Put(ctx, key, &entity); err != nil {
 		t.Fatal(err)
-		return
 	}
 
 	// execute
@@ -60,7 +59,7 @@ func TestLeaveGroup(t *testing.T) {
 
 	// リクエストは正常終了していること
 	if res.Code != http.StatusOK {
-		t.Fatalf("Non-expected status code: %v\n\tbody: %v", res.Code, res.Body)
+		t.Errorf("Non-expected status code: %v\n\tbody: %v", res.Code, res.Body)
 	}
 
 	// データストアの内容を確認（購読者エンティティ）
@@ -83,13 +82,13 @@ func TestLeaveGroup(t *testing.T) {
 		t.Fatal("LogSubscriber entity was not put")
 	}
 	if logSubscribers[0].MID != expectedMid {
-		t.Fatalf("Invalid posted LogSubscriber entity. MID='%v'", logSubscribers[0].MID)
+		t.Errorf("Invalid posted LogSubscriber entity. MID='%v'", logSubscribers[0].MID)
 	}
 	if logSubscribers[0].DisplayName != expectedName {
-		t.Fatalf("Invalid posted LogSubscriber entity. DisplayName='%v'", logSubscribers[0].DisplayName)
+		t.Errorf("Invalid posted LogSubscriber entity. DisplayName='%v'", logSubscribers[0].DisplayName)
 	}
 	if logSubscribers[0].EventType != expectedType {
-		t.Fatalf("Invalid posted LogSubscriber entity. EventType='%v'", logSubscribers[0].EventType)
+		t.Errorf("Invalid posted LogSubscriber entity. EventType='%v'", logSubscribers[0].EventType)
 	}
 }
 
@@ -140,7 +139,6 @@ func TestLeaveUser(t *testing.T) {
 	key := datastore.NewKey(ctx, "Subscriber", expectedMid, 0, nil)
 	if _, err = datastore.Put(ctx, key, &entity); err != nil {
 		t.Fatal(err)
-		return
 	}
 
 	// execute
@@ -149,7 +147,7 @@ func TestLeaveUser(t *testing.T) {
 
 	// リクエストは正常終了していること
 	if res.Code != http.StatusOK {
-		t.Fatalf("Non-expected status code: %v\n\tbody: %v", res.Code, res.Body)
+		t.Errorf("Non-expected status code: %v\n\tbody: %v", res.Code, res.Body)
 	}
 
 	// スタブがすべて呼ばれたことを検証
@@ -164,7 +162,7 @@ func TestLeaveUser(t *testing.T) {
 		t.Fatal(err)
 	}
 	if len(subscribers) != 0 {
-		t.Fatal("Subscriber entity is not remove")
+		t.Errorf("Subscriber entity is not remove")
 	}
 
 	// データストアの内容を確認（ログエンティティ）
@@ -177,12 +175,12 @@ func TestLeaveUser(t *testing.T) {
 		t.Fatal("LogSubscriber entity was not put")
 	}
 	if logSubscribers[0].MID != expectedMid {
-		t.Fatalf("Invalid posted LogSubscriber entity. MID='%v'", logSubscribers[0].MID)
+		t.Errorf("Invalid posted LogSubscriber entity. MID='%v'", logSubscribers[0].MID)
 	}
 	if logSubscribers[0].DisplayName != expectedName {
-		t.Fatalf("Invalid posted LogSubscriber entity. DisplayName='%v'", logSubscribers[0].DisplayName)
+		t.Errorf("Invalid posted LogSubscriber entity. DisplayName='%v'", logSubscribers[0].DisplayName)
 	}
 	if logSubscribers[0].EventType != expectedType {
-		t.Fatalf("Invalid posted LogSubscriber entity. EventType='%v'", logSubscribers[0].EventType)
+		t.Errorf("Invalid posted LogSubscriber entity. EventType='%v'", logSubscribers[0].EventType)
 	}
 }

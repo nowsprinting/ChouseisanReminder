@@ -22,7 +22,7 @@ func TestIsSetChouseisanCommandNormally(t *testing.T) {
 	text := "set chouseisan https://chouseisan.com/s?h=" + expectedHash
 
 	if b, hash := isSetChouseisanCommand(c, text); b == false {
-		t.Error("isSetChouseisanCommand() returnd false.")
+		t.Errorf("isSetChouseisanCommand() returnd false.")
 	} else if hash != expectedHash {
 		t.Errorf("Unmatch chouseisan hash. hash:%v", hash)
 	}
@@ -56,6 +56,7 @@ func TestWriteChouseisanHashNormally(t *testing.T) {
 	}
 	defer instance.Close()
 
+	// Contextが必要なので、ダミーのhttp.Request
 	req, err := instance.NewRequest("POST", "/task/analyzecommand", nil)
 	if err != nil {
 		t.Fatal(err)
@@ -72,21 +73,19 @@ func TestWriteChouseisanHashNormally(t *testing.T) {
 	key := datastore.NewKey(c, "Subscriber", mid, 0, nil)
 	if _, err = datastore.Put(c, key, &entity); err != nil {
 		t.Fatal(err)
-		return
 	}
 
+	// execute
 	if err := writeChouseisanHash(c, mid, expectedHash); err != nil {
 		t.Fatal(err)
-		return
 	}
 
 	// データストアにハッシュが書き込まれていること
 	actualEntity := subscriber{}
 	if err = datastore.Get(c, key, &actualEntity); err != nil {
 		t.Fatal(err)
-		return
 	}
 	if actualEntity.ChouseisanHash != expectedHash {
-		t.Fatalf("Unmatch entitiy's hash. hash='%v'", actualEntity.ChouseisanHash)
+		t.Errorf("Unmatch entitiy's hash. hash='%v'", actualEntity.ChouseisanHash)
 	}
 }
