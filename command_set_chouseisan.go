@@ -29,13 +29,13 @@ func writeChouseisanHash(c context.Context, mid string, hash string) error {
 
 	key := datastore.NewKey(c, "Subscriber", mid, 0, nil)
 	if err := datastore.Get(c, key, &entity); err != nil {
-		log.Errorf(c, "Error occurred at get Subscriber entity. mid=%v err: %v", mid, err)
+		log.Errorf(c, "Error occurred at get Subscriber entity. mid:%v err:%v", mid, err)
 		return err
 	}
 
 	entity.ChouseisanHash = hash
 	if _, err := datastore.Put(c, key, &entity); err != nil {
-		log.Errorf(c, "Error occurred at put Subscriber entity. mid=%v err: %v", mid, err)
+		log.Errorf(c, "Error occurred at put Subscriber entity. mid:%v err:%v", mid, err)
 		return err
 	}
 	return nil
