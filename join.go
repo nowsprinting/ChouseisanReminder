@@ -44,8 +44,23 @@ func joinWithContext(c context.Context, client *http.Client, w http.ResponseWrit
 		return
 	}
 
-	//購読者プロファイルを取得
+	var existEntity subscriber
 	mid := r.FormValue("mid")
+
+	//同じIDの購読者エンティティの存在をチェック
+	key := datastore.NewKey(c, "Subscriber", mid, 0, nil)
+	if err = datastore.Get(c, key, &existEntity); err != nil {
+		if err != datastore.ErrNoSuchEntity {
+			log.Errorf(c, "Error occurred at get Subscriber entity. mid:%v err: %v", mid, err)
+			return
+		}
+	} else {
+		//すでに同一idのエンティティが存在する場合、以降の処理をスキップ
+		log.Infof(c, "Already exist entity of the same id. Maybe already joined to this group. mid:%v", mid)
+		return
+	}
+
+	//購読者プロファイルを取得
 	senderName := getSenderName(c, bot, mid)
 
 	//購読者を保存（リマインドタイミングのデフォルトは3日前の8:00）
@@ -56,7 +71,6 @@ func joinWithContext(c context.Context, client *http.Client, w http.ResponseWrit
 		RemindBefore:   3,
 		RemindTime:     8,
 	}
-	key := datastore.NewKey(c, "Subscriber", mid, 0, nil)
 	if _, err = datastore.Put(c, key, &entity); err != nil {
 		log.Errorf(c, "Error occurred at put subcriber to datastore. mid:%v, err: %v", mid, err)
 		return
