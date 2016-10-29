@@ -9,43 +9,36 @@ import (
 )
 
 /**
- * `set name`コマンド判定と指定された名前の取り出し（正常系）
+ * `set name`コマンド判定と指定された名前の取り出し
  */
-func TestIsSetNameCommandNormally(t *testing.T) {
-	expectedName := "テストグループ"
-	text := "set name " + expectedName
-
-	if b, name := isSetNameCommand(text); b == false {
-		t.Errorf("isSetNameCommand() returnd false.")
-	} else if name != expectedName {
-		t.Errorf("Unmatch group name. name:%v", name)
+func TestIsSetNameCommand(t *testing.T) {
+	type testParameter struct {
+		text         string
+		expectedIs   bool
+		expectedName string
 	}
-}
+	testCases := []testParameter{{
+		text:         "set name テストグループ",
+		expectedIs:   true,
+		expectedName: "テストグループ",
+	}, {
+		text:         "     set name テストグループ\n\n", // 前後にノイズがあってもtrue
+		expectedIs:   true,
+		expectedName: "テストグループ",
+	}, {
+		text:         "set your name コマンド間違ったグループ", // コマンド誤り
+		expectedIs:   false,
+		expectedName: "",
+	}}
 
-/**
- * `set name`コマンド判定と指定された名前の取り出し（正常系・ノイズ付き）
- *
- * コマンド文字列の前後に、スペースや改行のノイズを入れる
- */
-func TestIsSetNameCommandWithNoise(t *testing.T) {
-	expectedName := "テストグループ"
-	text := "   set name " + expectedName + "\n"
-
-	if b, name := isSetNameCommand(text); b == false {
-		t.Errorf("isSetNameCommand() returnd false.")
-	} else if name != expectedName {
-		t.Errorf("Unmatch group name. name:%v", name)
-	}
-}
-
-/**
- * `set name`コマンド判定と指定された名前の取り出し（コマンド不一致）
- */
-func TestIsSetNameCommandUnmatch(t *testing.T) {
-	text := "set your name コマンド間違ったグループ"
-
-	if b, _ := isSetNameCommand(text); b {
-		t.Error("isSetNameCommand() returnd true. But, source text is not 'set name' command.")
+	for _, current := range testCases {
+		actualIs, actualName := isSetNameCommand(current.text)
+		if actualIs != current.expectedIs {
+			t.Errorf("Illegal return value. text:%v, returnd:%v", current.text, actualIs)
+		}
+		if actualName != current.expectedName {
+			t.Errorf("Illegal return value. text:%v, returnd:%v", current.text, actualName)
+		}
 	}
 }
 

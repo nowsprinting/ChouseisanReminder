@@ -9,43 +9,36 @@ import (
 )
 
 /**
- * `set chouseisan`コマンド判定とハッシュの取り出し（正常系）
+ * `set chouseisan`コマンド判定とハッシュの取り出し
  */
 func TestIsSetChouseisanCommandNormally(t *testing.T) {
-	expectedHash := "3f7ffd73ba174332ae05bd363eba8e71"
-	text := "set chouseisan https://chouseisan.com/s?h=" + expectedHash
-
-	if b, hash := isSetChouseisanCommand(text); b == false {
-		t.Errorf("isSetChouseisanCommand() returnd false.")
-	} else if hash != expectedHash {
-		t.Errorf("Unmatch chouseisan hash. hash:%v", hash)
+	type testParameter struct {
+		text         string
+		expectedIs   bool
+		expectedHash string
 	}
-}
+	testCases := []testParameter{{
+		text:         "set chouseisan https://chouseisan.com/s?h=3f7ffd73ba174332ae05bd363eba8e71",
+		expectedIs:   true,
+		expectedHash: "3f7ffd73ba174332ae05bd363eba8e71",
+	}, {
+		text:         "  set chouseisan https://chouseisan.com/s?h=3f7ffd73ba174332ae05bd363eba8e71\n\n", // 前後にノイズがあってもtrue
+		expectedIs:   true,
+		expectedHash: "3f7ffd73ba174332ae05bd363eba8e71",
+	}, {
+		text:         "set hash https://chouseisan.com/s?h=3f7ffd73ba174332ae05bd363eba8e71", // コマンド誤り
+		expectedIs:   false,
+		expectedHash: "",
+	}}
 
-/**
- * `set chouseisan`コマンド判定とハッシュの取り出し（正常系・ノイズ付き）
- *
- * コマンド文字列の前後に、スペースや改行のノイズを入れる
- */
-func TestIsSetChouseisanCommandWithNoise(t *testing.T) {
-	expectedHash := "3f7ffd73ba174332ae05bd363eba8e71"
-	text := " set chouseisan https://chouseisan.com/s?h=" + expectedHash + "\n"
-
-	if b, hash := isSetChouseisanCommand(text); b == false {
-		t.Errorf("isSetChouseisanCommand() returnd false.")
-	} else if hash != expectedHash {
-		t.Errorf("Unmatch chouseisan hash. hash:%v", hash)
-	}
-}
-
-/**
- * `set chouseisan`コマンド判定とハッシュの取り出し（コマンド不一致）
- */
-func TestIsSetChouseisanCommandUnmatch(t *testing.T) {
-	text := "set hash https://chouseisan.com/s?h=3f7ffd73ba174332ae05bd363eba8e71"
-
-	if b, _ := isSetChouseisanCommand(text); b {
-		t.Error("isSetChouseisanCommand() returnd true. But, source text is not 'set chouseisan' command.")
+	for _, current := range testCases {
+		actualIs, actualHash := isSetChouseisanCommand(current.text)
+		if actualIs != current.expectedIs {
+			t.Errorf("Illegal return value. text:%v, returnd:%v", current.text, actualIs)
+		}
+		if actualHash != current.expectedHash {
+			t.Errorf("Illegal return value. text:%v, returnd:%v", current.text, actualHash)
+		}
 	}
 }
 
