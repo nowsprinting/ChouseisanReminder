@@ -12,16 +12,10 @@ import (
  * `set chouseisan`コマンド判定とハッシュの取り出し（正常系）
  */
 func TestIsSetChouseisanCommandNormally(t *testing.T) {
-	c, done, err := aetest.NewContext()
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer done()
-
 	expectedHash := "3f7ffd73ba174332ae05bd363eba8e71"
 	text := "set chouseisan https://chouseisan.com/s?h=" + expectedHash
 
-	if b, hash := isSetChouseisanCommand(c, text); b == false {
+	if b, hash := isSetChouseisanCommand(text); b == false {
 		t.Errorf("isSetChouseisanCommand() returnd false.")
 	} else if hash != expectedHash {
 		t.Errorf("Unmatch chouseisan hash. hash:%v", hash)
@@ -34,16 +28,10 @@ func TestIsSetChouseisanCommandNormally(t *testing.T) {
  * コマンド文字列の前後に、スペースや改行のノイズを入れる
  */
 func TestIsSetChouseisanCommandWithNoise(t *testing.T) {
-	c, done, err := aetest.NewContext()
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer done()
-
 	expectedHash := "3f7ffd73ba174332ae05bd363eba8e71"
 	text := " set chouseisan https://chouseisan.com/s?h=" + expectedHash + "\n"
 
-	if b, hash := isSetChouseisanCommand(c, text); b == false {
+	if b, hash := isSetChouseisanCommand(text); b == false {
 		t.Errorf("isSetChouseisanCommand() returnd false.")
 	} else if hash != expectedHash {
 		t.Errorf("Unmatch chouseisan hash. hash:%v", hash)
@@ -54,15 +42,9 @@ func TestIsSetChouseisanCommandWithNoise(t *testing.T) {
  * `set chouseisan`コマンド判定とハッシュの取り出し（コマンド不一致）
  */
 func TestIsSetChouseisanCommandUnmatch(t *testing.T) {
-	c, done, err := aetest.NewContext()
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer done()
-
 	text := "set hash https://chouseisan.com/s?h=3f7ffd73ba174332ae05bd363eba8e71"
 
-	if b, _ := isSetChouseisanCommand(c, text); b {
+	if b, _ := isSetChouseisanCommand(text); b {
 		t.Error("isSetChouseisanCommand() returnd true. But, source text is not 'set chouseisan' command.")
 	}
 }

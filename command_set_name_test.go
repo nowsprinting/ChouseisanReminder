@@ -12,16 +12,10 @@ import (
  * `set name`コマンド判定と指定された名前の取り出し（正常系）
  */
 func TestIsSetNameCommandNormally(t *testing.T) {
-	c, done, err := aetest.NewContext()
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer done()
-
 	expectedName := "テストグループ"
 	text := "set name " + expectedName
 
-	if b, name := isSetNameCommand(c, text); b == false {
+	if b, name := isSetNameCommand(text); b == false {
 		t.Errorf("isSetNameCommand() returnd false.")
 	} else if name != expectedName {
 		t.Errorf("Unmatch group name. name:%v", name)
@@ -34,16 +28,10 @@ func TestIsSetNameCommandNormally(t *testing.T) {
  * コマンド文字列の前後に、スペースや改行のノイズを入れる
  */
 func TestIsSetNameCommandWithNoise(t *testing.T) {
-	c, done, err := aetest.NewContext()
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer done()
-
 	expectedName := "テストグループ"
 	text := "   set name " + expectedName + "\n"
 
-	if b, name := isSetNameCommand(c, text); b == false {
+	if b, name := isSetNameCommand(text); b == false {
 		t.Errorf("isSetNameCommand() returnd false.")
 	} else if name != expectedName {
 		t.Errorf("Unmatch group name. name:%v", name)
@@ -54,15 +42,9 @@ func TestIsSetNameCommandWithNoise(t *testing.T) {
  * `set name`コマンド判定と指定された名前の取り出し（コマンド不一致）
  */
 func TestIsSetNameCommandUnmatch(t *testing.T) {
-	c, done, err := aetest.NewContext()
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer done()
-
 	text := "set your name コマンド間違ったグループ"
 
-	if b, _ := isSetNameCommand(c, text); b {
+	if b, _ := isSetNameCommand(text); b {
 		t.Error("isSetNameCommand() returnd true. But, source text is not 'set name' command.")
 	}
 }

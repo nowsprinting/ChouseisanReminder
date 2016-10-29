@@ -36,7 +36,7 @@ func commandAnalyzeWithContext(c context.Context, client *http.Client, w http.Re
 	text := r.FormValue("text")
 
 	// `set chouseisan` command
-	if b, hash := isSetChouseisanCommand(c, text); b {
+	if b, hash := isSetChouseisanCommand(text); b {
 		if err := writeChouseisanHash(c, mid, hash); err != nil {
 			message := "調整さんイベントの設定に失敗しました\n" + err.Error()
 			replyMessage(c, client, token, message)
@@ -48,7 +48,7 @@ func commandAnalyzeWithContext(c context.Context, client *http.Client, w http.Re
 	}
 
 	// `set name` command
-	if b, name := isSetNameCommand(c, text); b {
+	if b, name := isSetNameCommand(text); b {
 		if err := writeName(c, mid, name); err != nil {
 			message := "グループ（もしくはトークルーム）の名前の設定に失敗しました\n" + err.Error()
 			replyMessage(c, client, token, message)
@@ -60,7 +60,7 @@ func commandAnalyzeWithContext(c context.Context, client *http.Client, w http.Re
 	}
 
 	// `version` command
-	if isVersionCommand(c, text) {
+	if isVersionCommand(text) {
 		message := version
 		replyMessage(c, client, token, message)
 		return

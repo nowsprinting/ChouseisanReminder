@@ -11,7 +11,7 @@ import (
 /**
  * `set name`コマンドであれば、指定された名前部分を返す
  */
-func isSetNameCommand(c context.Context, command string) (bool, string) {
+func isSetNameCommand(command string) (bool, string) {
 	pattern := regexp.MustCompile(`^[ \n]*set name (.+)[ \n]*$`)
 	matches := pattern.FindStringSubmatch(command)
 	if len(matches) == 2 {

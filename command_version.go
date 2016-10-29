@@ -1,15 +1,11 @@
 package main
 
-import (
-	"regexp"
-
-	"golang.org/x/net/context"
-)
+import "regexp"
 
 /**
  * `version`コマンドであればtrueを返す
  */
-func isVersionCommand(c context.Context, command string) bool {
+func isVersionCommand(command string) bool {
 	pattern := regexp.MustCompile(`^[ \n]*version[ \n]*$`)
 	return pattern.MatchString(command)
 }
