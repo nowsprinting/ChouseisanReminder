@@ -25,9 +25,9 @@ func readFile(t *testing.T, filename string) string {
 }
 
 /**
- * 登録イベント：グループ、ルーム（同じ扱いなのでテストはひとつ）
+ * 登録イベント：グループ、ルーム（同じ扱いなのでテストはひとつ）の正常系
  */
-func TestJoinGroup(t *testing.T) {
+func TestJoinGroupNormally(t *testing.T) {
 	opt := aetest.Options{StronglyConsistentDatastore: true} //データストアに即反映
 	instance, err := aetest.NewInstance(&opt)
 	if err != nil {
@@ -114,6 +114,98 @@ func TestJoinGroup(t *testing.T) {
 	}
 	if logSubscribers[0].EventType != expectedType {
 		t.Errorf("Invalid posted LogSubscriber entity. EventType='%v'", logSubscribers[0].EventType)
+	}
+}
+
+/**
+ * 登録イベント：グループ、ルーム（同じ扱いなのでテストはひとつ）で、すでにエンティティがある場合
+ *
+ * すでにBotがグループに所属している状態で、他のユーザを招待すると、joinイベントが送信される。
+ * このとき、処理をスルーすること。
+ * 具体的には、エンティティを上書きしない、リプライを返さない。
+ * see: https://github.com/nowsprinting/ChouseisanReminder/issues/3
+ */
+func TestJoinGroupExist(t *testing.T) {
+	opt := aetest.Options{StronglyConsistentDatastore: true} //データストアに即反映
+	instance, err := aetest.NewInstance(&opt)
+	if err != nil {
+		t.Fatalf("Failed to create aetest instance: %v", err)
+	}
+	defer instance.Close()
+
+	// 評価する値
+	expectedMid := "C00000000000000000000000000000000" //グループなので先頭は"C"
+	expectedName := "既存のグループ"
+	expectedType := "join"
+
+	// http.Requestを生成
+	param := url.Values{
+		"mid":        {expectedMid},
+		"type":       {expectedType},
+		"replyToken": {"nHuyWiB7yP5Zw52FIkcQobQuGDXCTA"},
+	}
+	req, err := instance.NewRequest("POST", "/task/join", strings.NewReader(param.Encode()))
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded") //必須
+
+	// Contextとhttp.Clientは、テストコード側でインスタンス化する（モックと共通のインスタンスを使う必要があるため）
+	ctx := appengine.NewContext(req)
+	client := urlfetch.Client(ctx)
+
+	// 外部アクセスはないはずだが、抑止のためにhttpmockを有効化
+	httpmock.ActivateNonDefault(client)
+	defer httpmock.DeactivateAndReset()
+
+	// 既存の同じidを持つ購読者エンティティ
+	entity := subscriber{
+		MID:         expectedMid,
+		DisplayName: expectedName,
+	}
+	key := datastore.NewKey(ctx, "Subscriber", expectedMid, 0, nil)
+	if _, err = datastore.Put(ctx, key, &entity); err != nil {
+		t.Fatal(err)
+	}
+
+	// execute
+	res := httptest.NewRecorder()
+	joinWithContext(ctx, client, res, req) //モックと同じhttp.Clientインスタンスを渡す
+
+	// リクエストは正常終了していること
+	if res.Code != http.StatusOK {
+		t.Errorf("Non-expected status code: %v\n\tbody: %v", res.Code, res.Body)
+	}
+
+	// スタブがすべて呼ばれたことを検証
+	if err = httpmock.AllStubsCalled(); err != nil {
+		t.Errorf("Not all stubs were called: %s", err)
+	}
+
+	// データストアの内容を確認。購読者エンティティのDisplayNameは書き換わっていないこと。
+	subscribers := []subscriber{}
+	_, err = datastore.NewQuery("Subscriber").GetAll(ctx, &subscribers)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(subscribers) != 1 {
+		t.Fatal("Subscriber entity was not put")
+	}
+	if subscribers[0].MID != expectedMid {
+		t.Errorf("Invalid posted subscriber entity. MID='%v'", subscribers[0].MID)
+	}
+	if subscribers[0].DisplayName != expectedName {
+		t.Errorf("Invalid posted subscriber entity. DisplayName='%v'", subscribers[0].DisplayName)
+	}
+
+	// データストアの内容を確認のログエンティティには追加されていないこと。
+	logSubscribers := []logSubscriber{}
+	_, err = datastore.NewQuery("LogSubscriber").GetAll(ctx, &logSubscribers)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(logSubscribers) != 0 {
+		t.Fatal("Added LogSubscriber entity.")
 	}
 }
 
