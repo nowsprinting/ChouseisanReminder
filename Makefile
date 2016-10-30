@@ -7,7 +7,7 @@ endif
 
 version:
 	echo package main > version.go
-	echo const version = \"$(shell git describe)\" >> version.go
+	echo const version = \"$(shell git describe --tags)\" >> version.go
 
 test: version
 		goapp test -v -covermode=count -coverprofile=coverage.out $(RUNFUNC)
