@@ -23,6 +23,8 @@
 ##### トーク受信
 
 - `/set chouseisan`コマンドで、リマインド対象の調整さんイベントを設定できる
+- `/set name`コマンドで、グループの表示名を設定できる
+- `/version`コマンドで、BOTアプリのバージョン番号を表示
 - グループ利用を想定しているため、テキストメッセージのオウム返しはしない
 
 ### 定時実行
@@ -77,20 +79,22 @@ LINE BOTのQRコードを`/img/linebot_qr.png`に置くこと（usage.htmlから
 
 ### version.go
 
-バージョン番号は、`make test`、`make deploy`の際に生成されるversion.goファイルに定義される。
+バージョン番号は、`make test`、`make deploy`の際に生成されるversion.goファイルに定義される。このファイルはリポジトリ管理対象外。
 
-直接`goapp deploy`コマンドでApp Engineにデプロイすると、定数`version`が未定義なためエラーとなる。`make deploy`コマンドを使うこと。
+`git clone`したプロジェクトを直接`goapp deploy`コマンドでApp Engineにデプロイすると、定数`version`が未定義なためエラーとなる。`make deploy`を使うこと。
 
 
 ## LINE BOTについて
 
-- トライアルで提供されていた BOT API Trialはdeprecatedされたため、新しいMessaging APIを利用するよう書き換えた
+- トライアルで提供されていた BOT API Trialはdeprecatedされたため、新しいMessaging APIを利用するよう書き換えた（v2.0.0）
     - see: [LINE Developers - Messaging API - Overview](https://developers.line.me/messaging-api/overview)
+    - v1.0.0とはデータストアに格納するMIDに互換性がないため、v1.0.0で動作していたアプリケーションを継続運用する場合は注意すること。
 - 開設したチャンネルの"Basic Information"にある"Callback URL"に、コールバックを受け取るURLを設定する必要がある。記述例:
 	- `https:// YOUR-APPLICATION-ID .appspot.com:443/line/callback`
 - その他、LINE BOTまわりは下記ブログエントリを参照
 	- [調整さんリマインダLINE BOTを作ってみた - やらなイカ？](http://nowsprinting.hatenablog.com/entry/2016/08/23/000000)
 	- [LINEの新しいMessaging APIを試してみた - やらなイカ？](http://nowsprinting.hatenablog.com/entry/2016/10/02/043410)
+	- [GAE/Goで動くLINE BOTのテストを書いてみた - やらなイカ？](http://nowsprinting.hatenablog.com/entry/2016/10/30/235459)
 
 
 ## 調整さんについて
