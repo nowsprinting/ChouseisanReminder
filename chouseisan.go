@@ -32,9 +32,16 @@ type schedule struct {
 }
 
 // 送信メッセージ用のサマリを組み立てて返す
+func (s *schedule) constructSummaryBody() string {
+	return s.DateString + "の出欠状況をお知らせします\n\n" +
+		"参加: " + strconv.Itoa(s.Present) + "名" + s.ParticipantsName +
+		"\n不参加: " + strconv.Itoa(s.Absent) + "名\n" +
+		"不明/未入力: " + strconv.Itoa(s.Unknown) + "名" + s.UnknownName
+}
+
+// 送信メッセージ用のサマリを組み立てて返す
 func (s *schedule) constructSummary(hash string) string {
-	return s.DateString + "の出欠状況をお知らせします\n参加: " + strconv.Itoa(s.Present) + "名" + s.ParticipantsName +
-		"\n不参加: " + strconv.Itoa(s.Absent) + "名\n不明/未入力: " + strconv.Itoa(s.Unknown) + "名" + s.UnknownName +
+	return s.constructSummaryBody() +
 		"\n\n詳細および出欠変更は「調整さん」へ\nhttps://chouseisan.com/s?h=" + hash
 }
 
@@ -218,8 +225,14 @@ func crawlChouseisanWithContext(c context.Context, client *http.Client, w http.R
 			// リマインド対象イベントがあれば、Push Messageを送信
 			for _, v := range result {
 				log.Infof(c, "Remind event! subscriber:%v date:%v", cSubscriber.DisplayName, v.DateString)
-				message := v.constructSummary(cSubscriber.ChouseisanHash)
-				if _, err = bot.PushMessage(cSubscriber.MID, linebot.NewTextMessage(message)).Do(); err != nil {
+				template := linebot.NewButtonsTemplate(
+					"", //サムネイル
+					"", //タイトル
+					v.constructSummaryBody(), //画像もタイトルも指定しない場合：160文字以内
+					linebot.NewURITemplateAction("出欠を登録（変更）する", "https://chouseisan.com/s?h="+cSubscriber.ChouseisanHash),
+				)
+				altText := "このメッセージが見えている人は、お使いのLINEアプリのバージョンおよび機種名を教えてください"
+				if _, err = bot.PushMessage(cSubscriber.MID, linebot.NewTemplateMessage(altText, template)).Do(); err != nil {
 					log.Errorf(c, "Error occurred at crawl chouseisan. subscriber:%v, date:%v, err: %v", cSubscriber.DisplayName, v.DateString, err)
 				}
 			}

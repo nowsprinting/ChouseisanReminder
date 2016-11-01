@@ -16,6 +16,28 @@ import (
 )
 
 /**
+ * リマインド通知用のサマリ組み立てのテスト
+ */
+func TestConstructSummary(t *testing.T) {
+	testdata := schedule{
+		DateString:       "10/29(土)",
+		Present:          1,
+		Absent:           2,
+		Unknown:          4,
+		ParticipantsName: "(電二郎)",
+		UnknownName:      "(電一,電四郎,電五郎,電六郎)",
+	}
+	expectedSummary := "10/29(土)の出欠状況をお知らせします\n\n" +
+		"参加: 1名(電二郎)\n不参加: 2名\n不明/未入力: 4名(電一,電四郎,電五郎,電六郎)" +
+		"\n\n詳細および出欠変更は「調整さん」へ\n" +
+		"https://chouseisan.com/s?h=3f7ffd73ba174332ae05bd363eba8e71"
+	actualSummary := testdata.constructSummary("3f7ffd73ba174332ae05bd363eba8e71")
+	if actualSummary != expectedSummary {
+		t.Errorf("Unmatch summary\nexpect:\n%v\nactual:\n%v", expectedSummary, actualSummary)
+	}
+}
+
+/**
  * 正常ケース
  */
 func TestParseCsvNormally(t *testing.T) {
