@@ -231,7 +231,8 @@ func crawlChouseisanWithContext(c context.Context, client *http.Client, w http.R
 					v.constructSummaryBody(), //画像もタイトルも指定しない場合：160文字以内
 					linebot.NewURITemplateAction("出欠を登録（変更）する", "https://chouseisan.com/s?h="+cSubscriber.ChouseisanHash),
 				)
-				altText := "このメッセージが見えている人は、お使いのLINEアプリのバージョンおよび機種名を教えてください"
+				altText := v.DateString + "の出欠状況をお知らせします" +
+					"\n（トークルームでもこのメッセージが見えている人は、お使いのLINEアプリのバージョンおよび機種名を教えてください）"
 				if _, err = bot.PushMessage(cSubscriber.MID, linebot.NewTemplateMessage(altText, template)).Do(); err != nil {
 					log.Errorf(c, "Error occurred at crawl chouseisan. subscriber:%v, date:%v, err: %v", cSubscriber.DisplayName, v.DateString, err)
 				}
