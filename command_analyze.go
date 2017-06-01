@@ -59,6 +59,28 @@ func commandAnalyzeWithContext(c context.Context, client *http.Client, w http.Re
 		return
 	}
 
+	// `uidtest` command（user idを取得してユーザネームをレスポンスする）
+	if isUidtestCommand(text) {
+		bot, err := createBotClient(c, client)
+		if err != nil {
+			return
+		}
+		uid := r.FormValue("uid")
+		message := ""
+		if len(uid) > 0 && uid[0:1] == "U" {
+			senderProfile, err := bot.GetProfile(uid).Do()
+			if err != nil {
+				log.Warningf(c, "Error occurred at get sender profile. uid: %v, err: %v", uid, err)
+				message = "userProfile取得失敗(" + uid + ")"
+			} else {
+				message = "今のメッセージ送信者は、" + senderProfile.DisplayName + "さんです"
+			}
+		} else {
+			message = "userId取得失敗(" + uid + ")"
+		}
+		replyMessage(c, client, token, message)
+	}
+
 	// `version` command
 	if isVersionCommand(text) {
 		message := version

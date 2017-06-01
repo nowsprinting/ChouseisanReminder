@@ -119,6 +119,7 @@ func lineCallback(w http.ResponseWriter, r *http.Request) {
 				if message.Text[0:1] == "/" {
 					task := taskqueue.NewPOSTTask("/task/commandanalyze", url.Values{
 						"mid":        {getSenderID(c, event)},
+						"uid":        {event.Source.UserID},
 						"replyToken": {event.ReplyToken},
 						"text":       {message.Text[1:]},
 					})
