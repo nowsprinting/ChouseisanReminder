@@ -10,7 +10,7 @@ version:
 	echo const version = \"$(shell git describe --tags)\" >> version.go
 
 test: version
-		goapp test -v -covermode=count -coverprofile=coverage.out $(RUNFUNC)
+		go test -v -covermode=count -coverprofile=coverage.out $(RUNFUNC)
 
 deploy: version
-	goapp deploy
+	gcloud app deploy --project kali-reminder-bot-2 --version 1
